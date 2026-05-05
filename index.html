@@ -1019,17 +1019,17 @@
         <div class="title-row">
           <h2>Étape 1 — Upload des images</h2>
         </div>
-        <p class="hint">Ajoute exactement 3 images IA et 3 photos réelles. Les paires se font par position (1↔1, 2↔2, 3↔3).</p>
+        <p class="hint">Ajoute entre 1 et 5 images IA, puis exactement le même nombre de photos réelles (paires par position 1↔1, 2↔2, etc.).</p>
 
         <div class="grid-2">
           <article class="upload-zone">
-            <h3>3 images générées par ChatGPT</h3>
+            <h3>Images générées par ChatGPT (1 à 5)</h3>
             <input id="aiUploadInput" type="file" accept="image/jpeg,image/png" multiple>
             <div class="preview-grid" id="aiPreviewGrid"></div>
           </article>
 
           <article class="upload-zone">
-            <h3>3 photos réelles (pour les EXIF)</h3>
+            <h3>Photos réelles pour les EXIF (1 à 5)</h3>
             <input id="realUploadInput" type="file" accept="image/jpeg" multiple>
             <div class="preview-grid" id="realPreviewGrid"></div>
           </article>
@@ -1085,7 +1085,7 @@
         <div class="inline-banner" id="step3Error"></div>
 
         <div class="actions">
-          <span class="hint">Quand les 3 images sont vertes, vérifie les photos puis clique sur Suivant.</span>
+          <span class="hint">Quand toutes les images sont vertes: maintiens appuyé sur chaque image puis choisis « Enregistrer dans Photos » (Save to Photos).</span>
           <button class="btn primary" id="step3NextBtn" type="button" disabled>Suivant</button>
         </div>
       </section>
@@ -1134,13 +1134,9 @@
         <div class="done-panel" id="donePanel">
           <article class="card">
             <div class="title-row">
-              <h3>DONE — Téléchargement</h3>
+              <h3>DONE — Résultats</h3>
             </div>
-            <div class="downloads">
-              <button class="btn primary" id="download1Btn" type="button" disabled>📥 Photo 1</button>
-              <button class="btn primary" id="download2Btn" type="button" disabled>📥 Photo 2</button>
-              <button class="btn primary" id="download3Btn" type="button" disabled>📥 Photo 3</button>
-            </div>
+            <p class="hint">Photos: utilise l’étape EXIF pour sauvegarder correctement (appui long sur l’image → « Enregistrer dans Photos »).</p>
 
             <div class="result-block">
               <div class="result-row">
@@ -1178,6 +1174,8 @@
       const PRIMARY_MODEL = "google/gemma-4-31b-it:free";
       const FALLBACK_MODEL = "openai/gpt-oss-120b:free";
       const API_KEY_STORAGE_KEY = "vintedPrep.openrouterApiKey";
+      const MIN_PAIR_COUNT = 1;
+      const MAX_PAIR_COUNT = 5;
 
       function makeDisruptionStageState() {
         return {
@@ -1185,6 +1183,18 @@
           stir: "idle",
           crush: "idle"
         };
+      }
+
+      function makeNullArray(count) {
+        return Array.from({ length: count }, () => null);
+      }
+
+      function makeFalseArray(count) {
+        return Array.from({ length: count }, () => false);
+      }
+
+      function makeStageArray(count) {
+        return Array.from({ length: count }, () => makeDisruptionStageState());
       }
 
       const state = {
@@ -1201,9 +1211,9 @@
         realFiles: [],
         aiPreviewUrls: [],
         realPreviewUrls: [],
-        disrupted: [null, null, null],
-        exifOutput: [null, null, null],
-        compareAfter: [false, false, false],
+        disrupted: [],
+        exifOutput: [],
+        compareAfter: [],
         step2Running: false,
         step3Running: false,
         titleRunning: false,
@@ -1213,12 +1223,8 @@
         storageAvailable: false,
         titleText: "",
         hashtagsText: "",
-        disruptionRealtime: [
-          makeDisruptionStageState(),
-          makeDisruptionStageState(),
-          makeDisruptionStageState()
-        ],
-        exifPreviewMeta: [null, null, null],
+        disruptionRealtime: [],
+        exifPreviewMeta: [],
         lastUsed: {
           title: null,
           tags: null
@@ -1274,9 +1280,6 @@
         hashtagsOutput: document.getElementById("hashtagsOutput"),
         tagsError: document.getElementById("tagsError"),
         donePanel: document.getElementById("donePanel"),
-        download1Btn: document.getElementById("download1Btn"),
-        download2Btn: document.getElementById("download2Btn"),
-        download3Btn: document.getElementById("download3Btn"),
         copyTitleBtn: document.getElementById("copyTitleBtn"),
         copyDoneTagsBtn: document.getElementById("copyDoneTagsBtn"),
         doneTitle: document.getElementById("doneTitle"),
@@ -1353,9 +1356,9 @@
         els.aiUploadInput.addEventListener("change", async (event) => {
           clearBanner(els.step1Error);
           const files = Array.from(event.target.files || []);
-          if (files.length !== 3) {
+          if (!isValidPairCount(files.length)) {
             state.aiFiles = [];
-            showBanner(els.step1Error, "Tu dois sélectionner exactement 3 images IA.");
+            showBanner(els.step1Error, `Images IA: sélectionne entre ${MIN_PAIR_COUNT} et ${MAX_PAIR_COUNT} fichiers.`);
           } else {
             state.aiFiles = files;
           }
@@ -1366,9 +1369,9 @@
         els.realUploadInput.addEventListener("change", async (event) => {
           clearBanner(els.step1Error);
           const files = Array.from(event.target.files || []);
-          if (files.length !== 3) {
+          if (!isValidPairCount(files.length)) {
             state.realFiles = [];
-            showBanner(els.step1Error, "Tu dois sélectionner exactement 3 photos réelles JPEG.");
+            showBanner(els.step1Error, `Photos réelles: sélectionne entre ${MIN_PAIR_COUNT} et ${MAX_PAIR_COUNT} JPEG.`);
           } else {
             const nonJpeg = files.some((f) => !isJpegFile(f));
             if (nonJpeg) {
@@ -1420,10 +1423,6 @@
         els.copyTagsBtn.addEventListener("click", () => copyWithFeedback(state.hashtagsText, els.copyTagsBtn, "Copié ✓"));
         els.copyTitleBtn.addEventListener("click", () => copyWithFeedback(state.titleText, els.copyTitleBtn, "Copié ✓"));
         els.copyDoneTagsBtn.addEventListener("click", () => copyWithFeedback(state.hashtagsText, els.copyDoneTagsBtn, "Copié ✓"));
-
-        els.download1Btn.addEventListener("click", () => downloadOutput(0));
-        els.download2Btn.addEventListener("click", () => downloadOutput(1));
-        els.download3Btn.addEventListener("click", () => downloadOutput(2));
 
         els.restartBtn.addEventListener("click", restartProcess);
 
@@ -1515,10 +1514,35 @@
         els.configNotice.textContent = text;
       }
 
+      function isValidPairCount(count) {
+        return Number.isInteger(count) && count >= MIN_PAIR_COUNT && count <= MAX_PAIR_COUNT;
+      }
+
+      function getPairCount() {
+        return state.aiFiles.length;
+      }
+
+      function hasAllProcessedFiles() {
+        return state.exifOutput.length > 0 && state.exifOutput.every(Boolean);
+      }
+
       function ensureStep1Ready(stepErrorEl, nextStepNumber) {
         if (!state.completed[1]) {
-          showBanner(stepErrorEl, "Upload requis: ajoute d'abord 3 images IA + 3 photos réelles.");
+          showBanner(stepErrorEl, `Upload requis: ajoute d'abord entre ${MIN_PAIR_COUNT} et ${MAX_PAIR_COUNT} images IA, et le même nombre de photos réelles.`);
           goToStep(1);
+          if (state.aiFiles.length === 0) {
+            try {
+              els.aiUploadInput.click();
+            } catch (_) {
+              // no-op
+            }
+          } else if (state.realFiles.length === 0) {
+            try {
+              els.realUploadInput.click();
+            } catch (_) {
+              // no-op
+            }
+          }
           return false;
         }
         goToStep(nextStepNumber);
@@ -1572,7 +1596,8 @@
 
       function renderPreviewGrid(container, urls, prefix) {
         container.innerHTML = "";
-        for (let i = 0; i < 3; i += 1) {
+        const slotCount = Math.max(urls.length, MIN_PAIR_COUNT);
+        for (let i = 0; i < slotCount; i += 1) {
           const url = urls[i];
           if (!url) {
             const placeholder = document.createElement("div");
@@ -1596,7 +1621,9 @@
       }
 
       function updateStep1State() {
-        state.completed[1] = state.aiFiles.length === 3 && state.realFiles.length === 3;
+        const aiCount = state.aiFiles.length;
+        const realCount = state.realFiles.length;
+        state.completed[1] = isValidPairCount(aiCount) && aiCount === realCount;
         if (!state.completed[1]) {
           state.completed[2] = false;
           state.completed[3] = false;
@@ -1604,13 +1631,22 @@
           state.skipTitleTags = false;
           state.lastUsed.title = null;
           state.lastUsed.tags = null;
-          state.disrupted = [null, null, null];
-          state.exifOutput = [null, null, null];
-          state.compareAfter = [false, false, false];
+          state.disrupted = [];
+          state.exifOutput = [];
+          state.compareAfter = [];
           resetStep2UI();
           resetStep3UI();
           renderModelUsage();
           updateDonePanel();
+          if (aiCount > 0 && realCount > 0 && aiCount !== realCount) {
+            showBanner(els.step1Error, `Le nombre doit être identique: ${aiCount} image(s) IA et ${realCount} photo(s) réelles.`);
+          } else if (aiCount > 0 && realCount === 0) {
+            showBanner(els.step1Error, "Ajoute maintenant les photos réelles correspondantes.");
+          } else if (realCount > 0 && aiCount === 0) {
+            showBanner(els.step1Error, "Ajoute d'abord les images IA correspondantes.");
+          }
+        } else {
+          clearBanner(els.step1Error);
         }
         els.step1NextBtn.disabled = !state.completed[1];
         renderStepUI();
@@ -1701,20 +1737,22 @@
           showBanner(els.step2Error, "Complète d'abord l'étape 1.");
           return;
         }
+        const pairCount = getPairCount();
         state.step2Running = true;
         state.completed[2] = false;
         state.disrupted.forEach((entry) => entry && entry.url && URL.revokeObjectURL(entry.url));
         state.exifOutput.forEach((entry) => entry && entry.url && URL.revokeObjectURL(entry.url));
-        state.disrupted = [null, null, null];
-        state.exifOutput = [null, null, null];
-        state.exifPreviewMeta = [null, null, null];
+        state.disrupted = makeNullArray(pairCount);
+        state.exifOutput = makeNullArray(pairCount);
+        state.exifPreviewMeta = makeNullArray(pairCount);
+        state.compareAfter = makeFalseArray(pairCount);
         resetStep2UI();
         resetExifPreview();
         updateBusyButtons();
 
         try {
-          for (let i = 0; i < 3; i += 1) {
-            setProgress(Math.round((i / 3) * 100));
+          for (let i = 0; i < pairCount; i += 1) {
+            setProgress(Math.round((i / pairCount) * 100));
             updateDisruptionStage(i, "shake", "running");
             const processedBlob = await disruptWatermark(state.aiFiles[i], (stage, stageStatus) => {
               updateDisruptionStage(i, stage, stageStatus);
@@ -1723,7 +1761,7 @@
               blob: processedBlob,
               url: URL.createObjectURL(processedBlob)
             };
-            setProgress(Math.round(((i + 1) / 3) * 100));
+            setProgress(Math.round(((i + 1) / pairCount) * 100));
             renderCompareCards();
           }
 
@@ -1731,7 +1769,7 @@
           state.completed[2] = state.disrupted.every(Boolean);
           if (state.completed[2]) {
             state.completed[3] = false;
-            state.exifOutput = [null, null, null];
+            state.exifOutput = makeNullArray(pairCount);
             resetStep3UI();
           }
         } catch (error) {
@@ -1755,11 +1793,8 @@
       }
 
       function resetDisruptionRealtime() {
-        state.disruptionRealtime = [
-          makeDisruptionStageState(),
-          makeDisruptionStageState(),
-          makeDisruptionStageState()
-        ];
+        const pairCount = getPairCount();
+        state.disruptionRealtime = makeStageArray(pairCount);
         renderDisruptionRealtime();
       }
 
@@ -1771,7 +1806,9 @@
 
       function renderDisruptionRealtime() {
         els.disruptionRealtimeList.innerHTML = "";
-        for (let i = 0; i < 3; i += 1) {
+        const count = getPairCount();
+        if (!count) return;
+        for (let i = 0; i < count; i += 1) {
           const item = state.disruptionRealtime[i] || makeDisruptionStageState();
           const card = document.createElement("div");
           card.className = "stage-item";
@@ -1796,7 +1833,9 @@
 
       function renderCompareCards() {
         els.compareGrid.innerHTML = "";
-        for (let i = 0; i < 3; i += 1) {
+        const count = getPairCount();
+        if (!count) return;
+        for (let i = 0; i < count; i += 1) {
           const beforeUrl = state.aiPreviewUrls[i];
           const output = state.disrupted[i];
           const card = document.createElement("article");
@@ -1850,12 +1889,13 @@
           showBanner(els.step3Error, "Complète d'abord l'étape 2.");
           return;
         }
+        const pairCount = getPairCount();
 
         state.step3Running = true;
         state.completed[3] = false;
         state.exifOutput.forEach((entry) => entry && entry.url && URL.revokeObjectURL(entry.url));
-        state.exifOutput = [null, null, null];
-        state.exifPreviewMeta = [null, null, null];
+        state.exifOutput = makeNullArray(pairCount);
+        state.exifPreviewMeta = makeNullArray(pairCount);
         renderExifStatus();
         renderExifPreview();
         updateBusyButtons();
@@ -1863,7 +1903,7 @@
         try {
           const nowExif = getExifDateTime(new Date());
           const usedFilenames = new Set();
-          for (let i = 0; i < 3; i += 1) {
+          for (let i = 0; i < pairCount; i += 1) {
             const disrupted = state.disrupted[i];
             const sourceFile = state.realFiles[i];
             const iphoneFilename = buildIphoneLikeFilename(i, sourceFile ? sourceFile.name : "", usedFilenames);
@@ -1891,7 +1931,9 @@
 
       function renderExifStatus() {
         els.exifStatusList.innerHTML = "";
-        for (let i = 0; i < 3; i += 1) {
+        const count = getPairCount();
+        if (!count) return;
+        for (let i = 0; i < count; i += 1) {
           const row = document.createElement("div");
           row.className = "status-item";
           const isDone = Boolean(state.exifOutput[i]);
@@ -1904,13 +1946,15 @@
       }
 
       function resetExifPreview() {
-        state.exifPreviewMeta = [null, null, null];
+        state.exifPreviewMeta = makeNullArray(getPairCount());
         renderExifPreview();
       }
 
       function renderExifPreview() {
         els.exifPreviewGrid.innerHTML = "";
-        for (let i = 0; i < 3; i += 1) {
+        const count = getPairCount();
+        if (!count) return;
+        for (let i = 0; i < count; i += 1) {
           const out = state.exifOutput[i];
           const disrupted = state.disrupted[i];
           const sourceAiUrl = state.aiPreviewUrls[i] || "";
@@ -2028,7 +2072,7 @@
 
       function resetStep3UI() {
         clearBanner(els.step3Error);
-        state.exifPreviewMeta = [null, null, null];
+        state.exifPreviewMeta = makeNullArray(getPairCount());
         renderExifStatus();
         renderExifPreview();
         els.step3NextBtn.disabled = true;
@@ -2149,7 +2193,7 @@
       }
 
       function onSkipStep4() {
-        if (!state.exifOutput.every(Boolean)) {
+        if (!hasAllProcessedFiles()) {
           showBanner(els.titleError, "Finalise d'abord l'étape 3 (métadonnées).");
           return;
         }
@@ -2561,7 +2605,7 @@
 
       function updateDonePanel() {
         state.titleText = els.titleInput.value.trim();
-        const hasFiles = state.exifOutput.every(Boolean);
+        const hasFiles = hasAllProcessedFiles();
         const hasContent = Boolean(state.titleText && state.hashtagsText);
         const skipped = Boolean(state.skipTitleTags && hasFiles);
         const hasOutputs = Boolean(hasFiles && (hasContent || skipped));
@@ -2572,17 +2616,7 @@
         els.copyTitleBtn.disabled = !state.titleText;
         els.copyDoneTagsBtn.disabled = !state.hashtagsText;
         els.skipStep4Btn.textContent = state.skipTitleTags ? "Étape 4 passée ✓" : "Passer titre + hashtags";
-        els.download1Btn.disabled = !state.exifOutput[0];
-        els.download2Btn.disabled = !state.exifOutput[1];
-        els.download3Btn.disabled = !state.exifOutput[2];
         renderStepUI();
-      }
-
-      function downloadOutput(index) {
-        const item = state.exifOutput[index];
-        if (!item || !item.blob) return;
-        const fallback = `IMG_E${String(index + 1).padStart(4, "0")}.JPG`;
-        downloadBlob(item.blob, item.filename || fallback);
       }
 
       function restartProcess() {
@@ -2595,9 +2629,9 @@
         state.realFiles = [];
         state.aiPreviewUrls = [];
         state.realPreviewUrls = [];
-        state.disrupted = [null, null, null];
-        state.exifOutput = [null, null, null];
-        state.compareAfter = [false, false, false];
+        state.disrupted = [];
+        state.exifOutput = [];
+        state.compareAfter = [];
         state.completed[1] = false;
         state.completed[2] = false;
         state.completed[3] = false;
@@ -2842,6 +2876,7 @@
         delete exifDict["0th"][514];
 
         const dateTimeTag = window.piexif.ImageIFD.DateTime;
+        const orientationTag = window.piexif.ImageIFD.Orientation;
         const dateTimeOriginalTag = window.piexif.ExifIFD.DateTimeOriginal;
         const dateTimeDigitizedTag = window.piexif.ExifIFD.DateTimeDigitized;
         const offsetTimeTag = window.piexif.ExifIFD.OffsetTime;
@@ -2849,6 +2884,8 @@
         const offsetTimeDigitizedTag = window.piexif.ExifIFD.OffsetTimeDigitized;
 
         setExifTagSafe(exifDict, "0th", dateTimeTag, nowExif, true);
+        // Force orientation "normal" to avoid auto-rotation in iOS Photos.
+        setExifTagSafe(exifDict, "0th", orientationTag, 1, false);
         setExifTagSafe(exifDict, "Exif", dateTimeOriginalTag, nowExif, true);
         setExifTagSafe(exifDict, "Exif", dateTimeDigitizedTag, nowExif, true);
 
@@ -2989,17 +3026,6 @@
           URL.revokeObjectURL(url);
           return img;
         });
-      }
-
-      function downloadBlob(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 500);
       }
 
       async function copyWithFeedback(text, button, successLabel) {
