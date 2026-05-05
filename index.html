@@ -1085,7 +1085,7 @@
         <div class="inline-banner" id="step3Error"></div>
 
         <div class="actions">
-          <span class="hint">Chaque image passera en vert quand elle est prête.</span>
+          <span class="hint">Quand les 3 images sont vertes, vérifie les photos puis clique sur Suivant.</span>
           <button class="btn primary" id="step3NextBtn" type="button" disabled>Suivant</button>
         </div>
       </section>
@@ -1879,10 +1879,6 @@
             renderExifPreview();
           }
           state.completed[3] = state.exifOutput.every(Boolean);
-          if (state.completed[3]) {
-            state.currentStep = 4;
-            goToStep(4);
-          }
         } catch (error) {
           showBanner(els.step3Error, `Erreur EXIF: ${error.message}`);
         } finally {
