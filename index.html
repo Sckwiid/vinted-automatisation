@@ -1137,9 +1137,9 @@
               <h3>DONE — Téléchargement</h3>
             </div>
             <div class="downloads">
-              <button class="btn primary" id="download1Btn" type="button" disabled>📥 Photo 1 – Femme</button>
-              <button class="btn primary" id="download2Btn" type="button" disabled>📥 Photo 2 – Article (lit)</button>
-              <button class="btn primary" id="download3Btn" type="button" disabled>📥 Photo 3 – Article (angle 2)</button>
+              <button class="btn primary" id="download1Btn" type="button" disabled>📥 Photo 1</button>
+              <button class="btn primary" id="download2Btn" type="button" disabled>📥 Photo 2</button>
+              <button class="btn primary" id="download3Btn" type="button" disabled>📥 Photo 3</button>
             </div>
 
             <div class="result-block">
@@ -1421,9 +1421,9 @@
         els.copyTitleBtn.addEventListener("click", () => copyWithFeedback(state.titleText, els.copyTitleBtn, "Copié ✓"));
         els.copyDoneTagsBtn.addEventListener("click", () => copyWithFeedback(state.hashtagsText, els.copyDoneTagsBtn, "Copié ✓"));
 
-        els.download1Btn.addEventListener("click", () => downloadOutput(0, "photo-1-femme.jpg"));
-        els.download2Btn.addEventListener("click", () => downloadOutput(1, "photo-2-article-lit.jpg"));
-        els.download3Btn.addEventListener("click", () => downloadOutput(2, "photo-3-article-angle-2.jpg"));
+        els.download1Btn.addEventListener("click", () => downloadOutput(0));
+        els.download2Btn.addEventListener("click", () => downloadOutput(1));
+        els.download3Btn.addEventListener("click", () => downloadOutput(2));
 
         els.restartBtn.addEventListener("click", restartProcess);
 
@@ -1862,14 +1862,17 @@
 
         try {
           const nowExif = getExifDateTime(new Date());
+          const usedFilenames = new Set();
           for (let i = 0; i < 3; i += 1) {
             const disrupted = state.disrupted[i];
             const sourceFile = state.realFiles[i];
-            const blob = await injectExifFromSource(disrupted.blob, sourceFile, nowExif);
+            const iphoneFilename = buildIphoneLikeFilename(i, sourceFile ? sourceFile.name : "", usedFilenames);
+            const blob = await injectExifFromSource(disrupted.blob, sourceFile, nowExif, iphoneFilename);
             const url = URL.createObjectURL(blob);
             state.exifOutput[i] = {
               blob,
-              url
+              url,
+              filename: iphoneFilename
             };
             state.exifPreviewMeta[i] = await extractExifPreviewMeta(blob);
             renderExifStatus();
@@ -1913,26 +1916,38 @@
         els.exifPreviewGrid.innerHTML = "";
         for (let i = 0; i < 3; i += 1) {
           const out = state.exifOutput[i];
+          const disrupted = state.disrupted[i];
+          const sourceAiUrl = state.aiPreviewUrls[i] || "";
           const meta = state.exifPreviewMeta[i];
-          if (!out) {
+          const previewUrl = out?.url || disrupted?.url || sourceAiUrl;
+
+          if (!previewUrl) {
             const placeholder = document.createElement("div");
             placeholder.className = "thumb-placeholder";
-            placeholder.textContent = `Image ${i + 1} EXIF en attente`;
+            placeholder.textContent = `Photo ${i + 1} en attente`;
             els.exifPreviewGrid.appendChild(placeholder);
             continue;
           }
 
           const card = document.createElement("div");
           card.className = "exif-preview-card";
-          const metaText = meta
-            ? `DateTime: ${meta.dateTime || "—"}\nDateTimeOriginal: ${meta.dateTimeOriginal || "—"}\nGPS supprimé: ${meta.gpsRemoved ? "oui" : "non"}`
-            : "Lecture EXIF en cours...";
+          let metaText = `Photo ${i + 1}\n`;
+          if (out) {
+            metaText += meta
+              ? `DateTime: ${meta.dateTime || "—"}\nDateTimeOriginal: ${meta.dateTimeOriginal || "—"}\nGPS supprimé: ${meta.gpsRemoved ? "oui" : "non"}`
+              : "Lecture EXIF en cours...";
+          } else if (disrupted?.url) {
+            metaText += "Image perturbée prête.\nEn attente d'injection EXIF.";
+          } else {
+            metaText += "Image IA source chargée.\nPerturbation requise avant injection EXIF.";
+          }
+
           card.innerHTML = `
-            <img src="${out.url}" alt="Aperçu EXIF ${i + 1}">
+            <img src="${previewUrl}" alt="Aperçu EXIF ${i + 1}">
             <div class="exif-meta">${metaText}</div>
           `;
           const img = card.querySelector("img");
-          img.addEventListener("click", () => openModal(out.url));
+          img.addEventListener("click", () => openModal(previewUrl));
           els.exifPreviewGrid.appendChild(card);
         }
       }
@@ -2510,10 +2525,11 @@
         renderStepUI();
       }
 
-      function downloadOutput(index, filename) {
+      function downloadOutput(index) {
         const item = state.exifOutput[index];
         if (!item || !item.blob) return;
-        downloadBlob(item.blob, filename);
+        const fallback = `IMG_E${String(index + 1).padStart(4, "0")}.JPG`;
+        downloadBlob(item.blob, item.filename || fallback);
       }
 
       function restartProcess() {
@@ -2752,7 +2768,7 @@
         }
       }
 
-      async function injectExifFromSource(targetBlob, realFile, nowExif) {
+      async function injectExifFromSource(targetBlob, realFile, nowExif, imageFilename) {
         const realDataUrl = await fileToDataURL(realFile);
         let exifDict = {};
         try {
@@ -2768,15 +2784,51 @@
         if (exifDict["GPS"]) {
           delete exifDict["GPS"];
         }
+        // Remove embedded thumbnail from source EXIF to prevent mismatched previews.
+        exifDict["1st"] = {};
+        exifDict["thumbnail"] = null;
+        delete exifDict["0th"][513];
+        delete exifDict["0th"][514];
 
         exifDict["0th"][window.piexif.ImageIFD.DateTime] = nowExif;
         exifDict["Exif"][window.piexif.ExifIFD.DateTimeOriginal] = nowExif;
         exifDict["Exif"][window.piexif.ExifIFD.DateTimeDigitized] = nowExif;
+        const documentNameTag = window.piexif.ImageIFD.DocumentName || 269;
+        const imageDescriptionTag = window.piexif.ImageIFD.ImageDescription || 270;
+        exifDict["0th"][documentNameTag] = imageFilename;
+        exifDict["0th"][imageDescriptionTag] = imageFilename;
 
         const targetDataUrl = await fileToJpegDataUrl(targetBlob);
         const exifBytes = window.piexif.dump(exifDict);
         const insertedDataUrl = window.piexif.insert(exifBytes, targetDataUrl);
         return dataURLToBlob(insertedDataUrl);
+      }
+
+      function buildIphoneLikeFilename(index, sourceName, usedNames) {
+        let number = extractIphoneSequenceFromName(sourceName);
+        for (let i = 0; i < 10000; i += 1) {
+          const current = String((number + i) % 10000).padStart(4, "0");
+          const candidate = `IMG_E${current}.JPG`;
+          if (!usedNames.has(candidate)) {
+            usedNames.add(candidate);
+            return candidate;
+          }
+        }
+
+        const fallback = `IMG_E${String(index + 1).padStart(4, "0")}.JPG`;
+        usedNames.add(fallback);
+        return fallback;
+      }
+
+      function extractIphoneSequenceFromName(name) {
+        const upper = String(name || "").toUpperCase();
+        const direct = upper.match(/IMG_[A-Z]?(\d{4})(?=\.[A-Z0-9]+$)/);
+        if (direct) return Number(direct[1]);
+
+        const trailing = upper.match(/(\d{4})(?!.*\d)/);
+        if (trailing) return Number(trailing[1]);
+
+        return Date.now() % 10000;
       }
 
       function getExifDateTime(date) {
