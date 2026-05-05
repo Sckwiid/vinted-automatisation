@@ -2844,28 +2844,47 @@
         const dateTimeTag = window.piexif.ImageIFD.DateTime;
         const dateTimeOriginalTag = window.piexif.ExifIFD.DateTimeOriginal;
         const dateTimeDigitizedTag = window.piexif.ExifIFD.DateTimeDigitized;
-        const offsetTimeTag = window.piexif.ExifIFD.OffsetTime || 36880;
-        const offsetTimeOriginalTag = window.piexif.ExifIFD.OffsetTimeOriginal || 36881;
-        const offsetTimeDigitizedTag = window.piexif.ExifIFD.OffsetTimeDigitized || 36882;
+        const offsetTimeTag = window.piexif.ExifIFD.OffsetTime;
+        const offsetTimeOriginalTag = window.piexif.ExifIFD.OffsetTimeOriginal;
+        const offsetTimeDigitizedTag = window.piexif.ExifIFD.OffsetTimeDigitized;
 
-        if (!exifDict["0th"][dateTimeTag]) exifDict["0th"][dateTimeTag] = nowExif;
-        if (!exifDict["Exif"][dateTimeOriginalTag]) exifDict["Exif"][dateTimeOriginalTag] = nowExif;
-        if (!exifDict["Exif"][dateTimeDigitizedTag]) exifDict["Exif"][dateTimeDigitizedTag] = nowExif;
+        setExifTagSafe(exifDict, "0th", dateTimeTag, nowExif, true);
+        setExifTagSafe(exifDict, "Exif", dateTimeOriginalTag, nowExif, true);
+        setExifTagSafe(exifDict, "Exif", dateTimeDigitizedTag, nowExif, true);
 
         const tzOffset = getExifUtcOffset(new Date());
-        if (!exifDict["Exif"][offsetTimeTag]) exifDict["Exif"][offsetTimeTag] = tzOffset;
-        if (!exifDict["Exif"][offsetTimeOriginalTag]) exifDict["Exif"][offsetTimeOriginalTag] = tzOffset;
-        if (!exifDict["Exif"][offsetTimeDigitizedTag]) exifDict["Exif"][offsetTimeDigitizedTag] = tzOffset;
+        setExifTagSafe(exifDict, "Exif", offsetTimeTag, tzOffset, true);
+        setExifTagSafe(exifDict, "Exif", offsetTimeOriginalTag, tzOffset, true);
+        setExifTagSafe(exifDict, "Exif", offsetTimeDigitizedTag, tzOffset, true);
 
-        const documentNameTag = window.piexif.ImageIFD.DocumentName || 269;
-        const imageDescriptionTag = window.piexif.ImageIFD.ImageDescription || 270;
-        exifDict["0th"][documentNameTag] = imageFilename;
-        exifDict["0th"][imageDescriptionTag] = imageFilename;
+        const documentNameTag = window.piexif.ImageIFD.DocumentName;
+        const imageDescriptionTag = window.piexif.ImageIFD.ImageDescription;
+        setExifTagSafe(exifDict, "0th", documentNameTag, imageFilename, false);
+        setExifTagSafe(exifDict, "0th", imageDescriptionTag, imageFilename, false);
 
         const targetDataUrl = await fileToJpegDataUrl(targetBlob);
         const exifBytes = window.piexif.dump(exifDict);
         const insertedDataUrl = window.piexif.insert(exifBytes, targetDataUrl);
         return dataURLToBlob(insertedDataUrl);
+      }
+
+      function setExifTagSafe(exifDict, ifdName, tagId, value, onlyIfMissing) {
+        if (!isExifTagSupported(ifdName, tagId)) return false;
+        const current = exifDict?.[ifdName]?.[tagId];
+        if (onlyIfMissing && current !== undefined && current !== null && current !== "") {
+          return true;
+        }
+        exifDict[ifdName][tagId] = value;
+        return true;
+      }
+
+      function isExifTagSupported(ifdName, tagId) {
+        if (!Number.isFinite(Number(tagId))) return false;
+        const tags = window.piexif?.TAGS || window.piexif?.Tags;
+        const ifdTags = tags && tags[ifdName];
+        if (!ifdTags) return false;
+        const key = String(tagId);
+        return Object.prototype.hasOwnProperty.call(ifdTags, key);
       }
 
       function buildIphoneLikeFilename(index, sourceName, usedNames) {
