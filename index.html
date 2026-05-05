@@ -1073,7 +1073,7 @@
         <div class="title-row">
           <h2>Étape 3 — Injection EXIF</h2>
         </div>
-        <p class="hint">Copie EXIF depuis la photo réelle correspondante, suppression GPS, date/heure actuelle.</p>
+        <p class="hint">Copie EXIF complet depuis la photo réelle correspondante (GPS/localisation, date/heure, appareil), avec nettoyage de la miniature embarquée.</p>
 
         <div class="actions">
           <button class="btn primary" id="startExifBtn" type="button">Injecter les EXIF</button>
@@ -1930,7 +1930,7 @@
           let metaText = `Photo ${i + 1}\n`;
           if (out) {
             metaText += meta
-              ? `DateTime: ${meta.dateTime || "—"}\nDateTimeOriginal: ${meta.dateTimeOriginal || "—"}\nGPS supprimé: ${meta.gpsRemoved ? "oui" : "non"}`
+              ? `DateTime: ${meta.dateTime || "—"}\nDateTimeOriginal: ${meta.dateTimeOriginal || "—"}\nDateTimeDigitized: ${meta.dateTimeDigitized || "—"}\nFuseau horaire: ${meta.offsetTimeOriginal || meta.offsetTime || "—"}\nGPS: ${formatGpsPreview(meta)}`
               : "Lecture EXIF en cours...";
           } else if (disrupted?.url) {
             metaText += "Image perturbée prête.\nEn attente d'injection EXIF.";
@@ -1954,19 +1954,76 @@
           const exif = window.piexif.load(dataUrl);
           const dateTime = exif?.["0th"]?.[window.piexif.ImageIFD.DateTime] || "";
           const dateTimeOriginal = exif?.["Exif"]?.[window.piexif.ExifIFD.DateTimeOriginal] || "";
+          const dateTimeDigitized = exif?.["Exif"]?.[window.piexif.ExifIFD.DateTimeDigitized] || "";
+          const offsetTime = exif?.["Exif"]?.[(window.piexif.ExifIFD.OffsetTime || 36880)] || "";
+          const offsetTimeOriginal = exif?.["Exif"]?.[(window.piexif.ExifIFD.OffsetTimeOriginal || 36881)] || "";
           const hasGps = Boolean(exif && exif["GPS"] && Object.keys(exif["GPS"]).length > 0);
+          const gpsCoords = hasGps ? extractGpsCoordinates(exif["GPS"]) : null;
           return {
             dateTime,
             dateTimeOriginal,
-            gpsRemoved: !hasGps
+            dateTimeDigitized,
+            offsetTime,
+            offsetTimeOriginal,
+            gpsPresent: hasGps,
+            latitude: gpsCoords ? gpsCoords.latitude : null,
+            longitude: gpsCoords ? gpsCoords.longitude : null
           };
         } catch (_) {
           return {
             dateTime: "",
             dateTimeOriginal: "",
-            gpsRemoved: true
+            dateTimeDigitized: "",
+            offsetTime: "",
+            offsetTimeOriginal: "",
+            gpsPresent: false,
+            latitude: null,
+            longitude: null
           };
         }
+      }
+
+      function formatGpsPreview(meta) {
+        if (!meta || !meta.gpsPresent) return "absent";
+        if (Number.isFinite(meta.latitude) && Number.isFinite(meta.longitude)) {
+          return `${meta.latitude.toFixed(6)}, ${meta.longitude.toFixed(6)}`;
+        }
+        return "présent";
+      }
+
+      function extractGpsCoordinates(gpsDict) {
+        const latDms = gpsDict[window.piexif.GPSIFD.GPSLatitude];
+        const latRef = gpsDict[window.piexif.GPSIFD.GPSLatitudeRef];
+        const lonDms = gpsDict[window.piexif.GPSIFD.GPSLongitude];
+        const lonRef = gpsDict[window.piexif.GPSIFD.GPSLongitudeRef];
+
+        const latitude = dmsToDecimal(latDms, latRef);
+        const longitude = dmsToDecimal(lonDms, lonRef);
+        return {
+          latitude,
+          longitude
+        };
+      }
+
+      function dmsToDecimal(dms, ref) {
+        if (!Array.isArray(dms) || dms.length < 3) return null;
+        const deg = rationalToNumber(dms[0]);
+        const min = rationalToNumber(dms[1]);
+        const sec = rationalToNumber(dms[2]);
+        if (![deg, min, sec].every(Number.isFinite)) return null;
+
+        let value = deg + (min / 60) + (sec / 3600);
+        const hemisphere = String(ref || "").toUpperCase();
+        if (hemisphere === "S" || hemisphere === "W") value *= -1;
+        return value;
+      }
+
+      function rationalToNumber(rational) {
+        if (!Array.isArray(rational) || rational.length !== 2) return null;
+        const numerator = Number(rational[0]);
+        const denominator = Number(rational[1]);
+        if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return null;
+        return numerator / denominator;
       }
 
       function resetStep3UI() {
@@ -2775,20 +2832,31 @@
 
         if (!exifDict["0th"]) exifDict["0th"] = {};
         if (!exifDict["Exif"]) exifDict["Exif"] = {};
+        if (!exifDict["GPS"]) exifDict["GPS"] = {};
         if (!exifDict["1st"]) exifDict["1st"] = {};
         if (!("thumbnail" in exifDict)) exifDict["thumbnail"] = null;
-        if (exifDict["GPS"]) {
-          delete exifDict["GPS"];
-        }
         // Remove embedded thumbnail from source EXIF to prevent mismatched previews.
         exifDict["1st"] = {};
         exifDict["thumbnail"] = null;
         delete exifDict["0th"][513];
         delete exifDict["0th"][514];
 
-        exifDict["0th"][window.piexif.ImageIFD.DateTime] = nowExif;
-        exifDict["Exif"][window.piexif.ExifIFD.DateTimeOriginal] = nowExif;
-        exifDict["Exif"][window.piexif.ExifIFD.DateTimeDigitized] = nowExif;
+        const dateTimeTag = window.piexif.ImageIFD.DateTime;
+        const dateTimeOriginalTag = window.piexif.ExifIFD.DateTimeOriginal;
+        const dateTimeDigitizedTag = window.piexif.ExifIFD.DateTimeDigitized;
+        const offsetTimeTag = window.piexif.ExifIFD.OffsetTime || 36880;
+        const offsetTimeOriginalTag = window.piexif.ExifIFD.OffsetTimeOriginal || 36881;
+        const offsetTimeDigitizedTag = window.piexif.ExifIFD.OffsetTimeDigitized || 36882;
+
+        if (!exifDict["0th"][dateTimeTag]) exifDict["0th"][dateTimeTag] = nowExif;
+        if (!exifDict["Exif"][dateTimeOriginalTag]) exifDict["Exif"][dateTimeOriginalTag] = nowExif;
+        if (!exifDict["Exif"][dateTimeDigitizedTag]) exifDict["Exif"][dateTimeDigitizedTag] = nowExif;
+
+        const tzOffset = getExifUtcOffset(new Date());
+        if (!exifDict["Exif"][offsetTimeTag]) exifDict["Exif"][offsetTimeTag] = tzOffset;
+        if (!exifDict["Exif"][offsetTimeOriginalTag]) exifDict["Exif"][offsetTimeOriginalTag] = tzOffset;
+        if (!exifDict["Exif"][offsetTimeDigitizedTag]) exifDict["Exif"][offsetTimeDigitizedTag] = tzOffset;
+
         const documentNameTag = window.piexif.ImageIFD.DocumentName || 269;
         const imageDescriptionTag = window.piexif.ImageIFD.ImageDescription || 270;
         exifDict["0th"][documentNameTag] = imageFilename;
@@ -2835,6 +2903,15 @@
         const min = String(date.getMinutes()).padStart(2, "0");
         const s = String(date.getSeconds()).padStart(2, "0");
         return `${y}:${m}:${d} ${h}:${min}:${s}`;
+      }
+
+      function getExifUtcOffset(date) {
+        const offsetMinutes = -date.getTimezoneOffset();
+        const sign = offsetMinutes >= 0 ? "+" : "-";
+        const absMinutes = Math.abs(offsetMinutes);
+        const hours = String(Math.floor(absMinutes / 60)).padStart(2, "0");
+        const minutes = String(absMinutes % 60).padStart(2, "0");
+        return `${sign}${hours}:${minutes}`;
       }
 
       function isJpegFile(file) {
