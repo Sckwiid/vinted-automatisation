@@ -963,6 +963,23 @@
         height: 22px;
       }
     }
+
+    body.focus-exif-mode #configHeader,
+    body.focus-exif-mode #quickTextBtn,
+    body.focus-exif-mode [data-step-chip="4"],
+    body.focus-exif-mode [data-step-card="4"] {
+      display: none !important;
+    }
+
+    body.focus-exif-mode .stepper {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (min-width: 720px) {
+      body.focus-exif-mode .quick-actions .actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -1019,7 +1036,7 @@
         <div class="title-row">
           <h2>Étape 1 — Upload des images</h2>
         </div>
-        <p class="hint">Ajoute entre 1 et 5 images IA, puis exactement le même nombre de photos réelles (paires par position 1↔1, 2↔2, etc.).</p>
+        <p class="hint">Ajoute entre 1 et 5 images IA (en une fois ou en plusieurs sélections), puis exactement le même nombre de photos réelles (paires par position 1↔1, 2↔2, etc.).</p>
 
         <div class="grid-2">
           <article class="upload-zone">
@@ -1086,7 +1103,7 @@
 
         <div class="actions">
           <span class="hint">Quand toutes les images sont vertes: maintiens appuyé sur chaque image puis choisis « Enregistrer dans Photos » (Save to Photos).</span>
-          <button class="btn primary" id="step3NextBtn" type="button" disabled>Suivant</button>
+          <button class="btn primary" id="step3NextBtn" type="button" disabled hidden>Suivant</button>
         </div>
       </section>
 
@@ -1295,6 +1312,7 @@
       const stepChips = Array.from(document.querySelectorAll("[data-step-chip]"));
 
       function init() {
+        document.body.classList.add("focus-exif-mode");
         initApiKeyStorage();
         bindEvents();
         renderPreviews();
@@ -1355,34 +1373,43 @@
 
         els.aiUploadInput.addEventListener("change", async (event) => {
           clearBanner(els.step1Error);
-          const files = Array.from(event.target.files || []);
-          if (!isValidPairCount(files.length)) {
-            state.aiFiles = [];
+          const incoming = Array.from(event.target.files || []);
+          const merged = mergeSelectedFiles(state.aiFiles, incoming);
+          if (merged.rejected) {
+            showBanner(els.step1Error, `Images IA: maximum ${MAX_PAIR_COUNT} fichiers au total.`);
+          } else if (incoming.length > 0) {
+            clearBanner(els.step1Error);
+          }
+          if (incoming.length > 0 && !isValidPairCount(merged.files.length)) {
+            state.aiFiles = merged.files;
             showBanner(els.step1Error, `Images IA: sélectionne entre ${MIN_PAIR_COUNT} et ${MAX_PAIR_COUNT} fichiers.`);
           } else {
-            state.aiFiles = files;
+            state.aiFiles = merged.files;
           }
           await refreshPreviewUrls("ai");
           updateStep1State();
+          event.target.value = "";
         });
 
         els.realUploadInput.addEventListener("change", async (event) => {
           clearBanner(els.step1Error);
-          const files = Array.from(event.target.files || []);
-          if (!isValidPairCount(files.length)) {
-            state.realFiles = [];
-            showBanner(els.step1Error, `Photos réelles: sélectionne entre ${MIN_PAIR_COUNT} et ${MAX_PAIR_COUNT} JPEG.`);
-          } else {
-            const nonJpeg = files.some((f) => !isJpegFile(f));
-            if (nonJpeg) {
-              state.realFiles = [];
-              showBanner(els.step1Error, "Les photos réelles doivent être en JPEG.");
-            } else {
-              state.realFiles = files;
-            }
+          const incoming = Array.from(event.target.files || []);
+          const nonJpeg = incoming.some((f) => !isJpegFile(f));
+          if (nonJpeg) {
+            showBanner(els.step1Error, "Les photos réelles doivent être en JPEG.");
+            event.target.value = "";
+            return;
           }
+          const merged = mergeSelectedFiles(state.realFiles, incoming);
+          if (merged.rejected) {
+            showBanner(els.step1Error, `Photos réelles: maximum ${MAX_PAIR_COUNT} JPEG au total.`);
+          } else if (incoming.length > 0) {
+            clearBanner(els.step1Error);
+          }
+          state.realFiles = merged.files;
           await refreshPreviewUrls("real");
           updateStep1State();
+          event.target.value = "";
         });
 
         els.step1NextBtn.addEventListener("click", () => {
@@ -1403,9 +1430,8 @@
 
         els.step3BackBtn.addEventListener("click", () => goToStep(2));
         els.step3NextBtn.addEventListener("click", () => {
-          if (state.completed[3]) {
-            goToStep(4);
-          }
+          if (!state.completed[3]) return;
+          clearBanner(els.step3Error);
         });
         els.startExifBtn.addEventListener("click", runExifInjection);
 
@@ -1520,6 +1546,27 @@
 
       function getPairCount() {
         return state.aiFiles.length;
+      }
+
+      function mergeSelectedFiles(currentFiles, incomingFiles) {
+        const result = [];
+        const seen = new Set();
+
+        const pushUnique = (file) => {
+          const key = `${file.name}__${file.size}__${file.lastModified}__${file.type}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          result.push(file);
+        };
+
+        currentFiles.forEach(pushUnique);
+        incomingFiles.forEach(pushUnique);
+
+        const rejected = result.length > MAX_PAIR_COUNT;
+        return {
+          files: rejected ? result.slice(0, MAX_PAIR_COUNT) : result,
+          rejected
+        };
       }
 
       function hasAllProcessedFiles() {
