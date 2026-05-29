@@ -497,6 +497,14 @@
       white-space: pre-line;
     }
 
+    .exif-actions {
+      grid-column: 2;
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     .config-help {
       margin: 0;
       color: var(--muted);
@@ -948,6 +956,10 @@
         width: 88px;
         height: 88px;
       }
+
+      .exif-actions {
+        grid-column: 1 / -1;
+      }
     }
 
     @media (max-width: 450px) {
@@ -1103,7 +1115,7 @@
         <div class="inline-banner" id="step3Error"></div>
 
         <div class="actions">
-          <span class="hint">Quand toutes les images sont vertes: maintiens appuyé sur chaque image puis choisis « Enregistrer dans Photos » (Save to Photos).</span>
+          <span class="hint">Mobile: appui long sur l’image → « Enregistrer dans Photos » (Save to Photos). Desktop: utilise « Télécharger EXIF brut » pour éviter la perte EXIF avec certains navigateurs.</span>
           <button class="btn primary" id="step3NextBtn" type="button" disabled hidden>Suivant</button>
         </div>
       </section>
@@ -1957,12 +1969,16 @@
             const iphoneFilename = buildIphoneLikeFilename(i, sourceFile ? sourceFile.name : "", usedFilenames);
             const blob = await injectExifFromSource(disrupted.blob, sourceFile, nowExif, iphoneFilename);
             const url = URL.createObjectURL(blob);
+            const previewMeta = await extractExifPreviewMeta(blob);
+            if (!previewMeta || (!previewMeta.dateTime && !previewMeta.dateTimeOriginal && !previewMeta.gpsPresent)) {
+              throw new Error(`EXIF non détecté après injection sur l'image ${i + 1}.`);
+            }
             state.exifOutput[i] = {
               blob,
               url,
               filename: iphoneFilename
             };
-            state.exifPreviewMeta[i] = await extractExifPreviewMeta(blob);
+            state.exifPreviewMeta[i] = previewMeta;
             renderExifStatus();
             renderExifPreview();
           }
@@ -2030,12 +2046,32 @@
             metaText += "Image IA source chargée.\nPerturbation requise avant injection EXIF.";
           }
 
-          card.innerHTML = `
-            <img src="${previewUrl}" alt="Aperçu EXIF ${i + 1}">
-            <div class="exif-meta">${metaText}</div>
-          `;
-          const img = card.querySelector("img");
+          const img = document.createElement("img");
+          img.src = previewUrl;
+          img.alt = `Aperçu EXIF ${i + 1}`;
           img.addEventListener("click", () => openModal(previewUrl));
+
+          const metaDiv = document.createElement("div");
+          metaDiv.className = "exif-meta";
+          metaDiv.textContent = metaText;
+
+          card.appendChild(img);
+          card.appendChild(metaDiv);
+
+          if (out && out.blob) {
+            const actions = document.createElement("div");
+            actions.className = "exif-actions";
+            const downloadBtn = document.createElement("button");
+            downloadBtn.type = "button";
+            downloadBtn.className = "btn ghost";
+            downloadBtn.textContent = "Télécharger EXIF brut";
+            downloadBtn.addEventListener("click", () => {
+              downloadBlob(out.blob, out.filename || `IMG_${String(i + 1).padStart(4, "0")}.JPG`);
+            });
+            actions.appendChild(downloadBtn);
+            card.appendChild(actions);
+          }
+
           els.exifPreviewGrid.appendChild(card);
         }
       }
@@ -3057,6 +3093,17 @@
           arr[i] = binary.charCodeAt(i);
         }
         return new Blob([arr], { type: mime });
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename || "image.jpg";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
       function loadImageFromURL(url) {

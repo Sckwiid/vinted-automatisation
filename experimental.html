@@ -669,7 +669,7 @@
         <div class="title-row">
           <h2>Résultats EXIF</h2>
         </div>
-        <p class="hint">Mobile: appui long sur la photo -> « Enregistrer dans Photos » (en anglais: Save to Photos). Desktop: clic droit -> enregistrer l'image.</p>
+        <p class="hint">Mobile: appui long sur la photo -> « Enregistrer dans Photos » (en anglais: Save to Photos). Desktop: utilise le bouton « Télécharger EXIF brut » (évite « Enregistrer l'image sous » qui peut retirer les métadonnées selon le navigateur).</p>
         <div class="result-grid" id="resultGrid"></div>
       </section>
     </div>
@@ -830,7 +830,7 @@
         try {
           const exif = JSON.parse(rawExif);
           const info = JSON.parse(rawInfo);
-          if (!exif || typeof exif !== "object") throw new Error("invalid exif");
+          if (!exif || typeof exif !== "object" || !hasEnoughTemplateData(exif)) throw new Error("invalid exif");
           state.templateExif = exif;
           state.templateInfo = info;
         } catch (_) {
@@ -1093,6 +1093,23 @@
           metaBox.textContent = lines.join("\n");
           card.appendChild(metaBox);
 
+          if (output && output.blob) {
+            const actions = document.createElement("div");
+            actions.className = "actions";
+            actions.style.padding = "10px";
+            actions.style.borderTop = "1px solid #273143";
+            actions.style.background = "#0f1420";
+            const downloadBtn = document.createElement("button");
+            downloadBtn.type = "button";
+            downloadBtn.className = "btn ghost";
+            downloadBtn.textContent = "Télécharger EXIF brut";
+            downloadBtn.addEventListener("click", () => {
+              downloadBlob(output.blob, output.filename || `IMG_${String(i + 1).padStart(4, "0")}.JPG`);
+            });
+            actions.appendChild(downloadBtn);
+            card.appendChild(actions);
+          }
+
           els.resultGrid.appendChild(card);
         }
       }
@@ -1137,6 +1154,10 @@
           showBanner(els.runBanner, "Crée d'abord le profil EXIF de référence.");
           return;
         }
+        if (!hasEnoughTemplateData(state.templateExif)) {
+          showBanner(els.runBanner, "Profil EXIF invalide ou incomplet. Recharge une vraie photo de référence.");
+          return;
+        }
         if (!isValidAiCount(state.aiFiles.length)) {
           showBanner(els.runBanner, `Ajoute entre ${MIN_AI_COUNT} et ${MAX_AI_COUNT} images IA.`);
           return;
@@ -1169,9 +1190,13 @@
             const exifNow = new Date(Date.now() + (i * 1500));
             const filename = buildIphoneLikeFilename(filenameNumbers);
             const injected = await injectExifUsingTemplate(disrupted, state.templateExif, exifNow, filename);
+            const verify = await extractExifPreviewMeta(injected);
+            if (!verify || (!verify.dateTime && !verify.dateTimeOriginal && !verify.gpsPresent)) {
+              throw new Error(`EXIF non détecté après injection sur la photo ${i + 1}.`);
+            }
             const url = URL.createObjectURL(injected);
             state.results[i] = { blob: injected, url, filename };
-            state.resultMeta[i] = await extractExifPreviewMeta(injected);
+            state.resultMeta[i] = verify;
             updateStage(i, "exif", "done");
             setProgress(((i + 1) / count) * 100);
             renderResultGrid();
@@ -1680,6 +1705,17 @@
           arr[i] = binary.charCodeAt(i);
         }
         return new Blob([arr], { type: mime });
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename || "image.jpg";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
       function loadImageFromURL(url) {
