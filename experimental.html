@@ -149,7 +149,7 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-4);
       align-items: start;
     }
@@ -165,6 +165,23 @@
 
     .panel.compact {
       padding: 14px;
+    }
+
+    .profile-popover {
+      position: fixed;
+      left: 50%;
+      top: 84px;
+      z-index: 45;
+      width: min(420px, calc(100% - 24px));
+      max-height: calc(100vh - 104px);
+      overflow: auto;
+      transform: translateX(-50%);
+      border-color: #11645d;
+      box-shadow: 0 24px 70px #00000099, 0 0 0 999px #00000080;
+    }
+
+    .profile-popover[hidden] {
+      display: none !important;
     }
 
     .panel-title {
@@ -237,6 +254,12 @@
       width: 18px;
       height: 18px;
       flex: 0 0 auto;
+    }
+
+    .icon-only {
+      width: 38px;
+      min-height: 38px;
+      padding: 0;
     }
 
     .btn:disabled {
@@ -628,10 +651,6 @@
     }
 
     @media (max-width: 900px) {
-      .workspace {
-        grid-template-columns: 1fr;
-      }
-
       .upload-strip {
         grid-template-columns: 1fr;
       }
@@ -685,10 +704,12 @@
   <main class="app">
     <div class="container">
       <div class="workspace">
-        <aside class="panel compact">
+        <aside class="panel compact profile-popover" id="referencePanel" hidden>
           <div class="panel-title">
             <h2>Profil EXIF</h2>
-            <span class="status-pill warn" id="referenceStatus">Absent</span>
+            <button class="btn ghost icon-only" id="closeReferenceBtn" type="button" aria-label="Fermer le profil EXIF">
+              <i data-lucide="x"></i>
+            </button>
           </div>
           <p class="hint">Une photo réelle sert de base. Le profil reste dans le cache navigateur.</p>
 
@@ -714,6 +735,9 @@
             <div class="panel-title">
               <h2>Traitement direct</h2>
               <span class="status-pill" id="workStatus">Prêt</span>
+            </div>
+            <div class="actions" id="missingProfileActions" hidden>
+              <button class="btn ghost" id="openReferenceBtn" type="button"><i data-lucide="database"></i>Ajouter le profil EXIF</button>
             </div>
 
             <div class="upload-strip">
@@ -790,14 +814,18 @@
         outputs: [],
         outputMeta: [],
         stages: [],
-        running: false
+        running: false,
+        profilePopupDismissed: false
       };
 
       const els = {
+        referencePanel: document.getElementById("referencePanel"),
         referenceInput: document.getElementById("referenceInput"),
         saveReferenceBtn: document.getElementById("saveReferenceBtn"),
         clearReferenceBtn: document.getElementById("clearReferenceBtn"),
-        referenceStatus: document.getElementById("referenceStatus"),
+        closeReferenceBtn: document.getElementById("closeReferenceBtn"),
+        openReferenceBtn: document.getElementById("openReferenceBtn"),
+        missingProfileActions: document.getElementById("missingProfileActions"),
         referenceBanner: document.getElementById("referenceBanner"),
         referenceCard: document.getElementById("referenceCard"),
         referenceMetaList: document.getElementById("referenceMetaList"),
@@ -831,6 +859,16 @@
       function bindEvents() {
         els.saveReferenceBtn.addEventListener("click", saveReferenceFromInput);
         els.clearReferenceBtn.addEventListener("click", clearReferenceProfile);
+        els.closeReferenceBtn.addEventListener("click", () => {
+          state.profilePopupDismissed = true;
+          renderReference();
+          updateControls();
+        });
+        els.openReferenceBtn.addEventListener("click", () => {
+          state.profilePopupDismissed = false;
+          renderReference();
+          updateControls();
+        });
         els.referenceInput.addEventListener("change", () => {
           clearBanner(els.referenceBanner);
           updateControls();
@@ -893,6 +931,7 @@
         try {
           const profile = await createReferenceProfileFromFile(file);
           persistReferenceProfile(profile, els.referenceBanner);
+          state.profilePopupDismissed = true;
           renderReference();
           updateControls();
         } catch (error) {
@@ -905,6 +944,7 @@
 
       function clearReferenceProfile() {
         state.referenceProfile = null;
+        state.profilePopupDismissed = false;
         if (state.storageAvailable) {
           try {
             window.localStorage.removeItem(STORAGE_KEY);
@@ -948,17 +988,15 @@
 
       function renderReference() {
         const profile = state.referenceProfile;
-        els.referenceCard.hidden = !profile;
+        const shouldShowPanel = !profile && !state.profilePopupDismissed;
+        els.referencePanel.hidden = !shouldShowPanel;
+        els.referenceCard.hidden = true;
 
         if (!profile) {
-          els.referenceStatus.className = "status-pill warn";
-          els.referenceStatus.textContent = "Absent";
           els.referenceMetaList.innerHTML = "";
           return;
         }
 
-        els.referenceStatus.className = "status-pill";
-        els.referenceStatus.textContent = "En cache";
         const rows = [
           ["Source", profile.info.sourceName || "-"],
           ["Appareil", profile.info.device || "-"],
@@ -1122,8 +1160,10 @@
         const hasReferenceCandidate = hasReference || Boolean(els.referenceInput.files && els.referenceInput.files[0]);
         const hasImages = isValidAiCount(state.aiFiles.length);
         const hasCompleteOutputs = hasImages && state.outputs.length === state.aiFiles.length && state.outputs.every(Boolean);
+        const profilePanelVisible = !els.referencePanel.hidden;
         els.runAllBtn.disabled = state.running || !hasReferenceCandidate || !hasImages;
         els.downloadZipBtn.disabled = state.running || !hasCompleteOutputs;
+        els.missingProfileActions.hidden = hasReference || profilePanelVisible;
 
         if (state.running) {
           els.workStatus.className = "status-pill";
