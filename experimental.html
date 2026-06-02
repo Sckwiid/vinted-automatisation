@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vinted Prep - Experimental</title>
   <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
     :root {
@@ -704,7 +705,6 @@
           <div class="inline-banner" id="referenceBanner"></div>
 
           <div class="reference-card" id="referenceCard" hidden>
-            <img class="reference-preview" id="referencePreview" alt="Photo de référence">
             <dl class="meta-list" id="referenceMetaList"></dl>
           </div>
         </aside>
@@ -718,10 +718,13 @@
 
             <div class="upload-strip">
               <div class="field">
-                <label for="aiUploadInput">Images IA à traiter (1 à 5)</label>
+                <label for="aiUploadInput">Images IA à traiter (1 à 20)</label>
                 <input id="aiUploadInput" type="file" accept="image/jpeg,image/png" multiple>
               </div>
               <button class="btn primary" id="runAllBtn" type="button" disabled><i data-lucide="wand-sparkles"></i>Perturber + injecter EXIF</button>
+            </div>
+            <div class="actions">
+              <button class="btn ghost" id="downloadZipBtn" type="button" disabled><i data-lucide="archive"></i>Télécharger toutes les images en ZIP</button>
             </div>
 
             <div class="preview-grid" id="aiPreviewGrid"></div>
@@ -760,7 +763,7 @@
     (function () {
       const STORAGE_KEY = "vintedPrep.experimental.referenceProfile.v3";
       const MIN_AI_COUNT = 1;
-      const MAX_AI_COUNT = 5;
+      const MAX_AI_COUNT = 20;
 
       function makeStageState() {
         return {
@@ -797,11 +800,11 @@
         referenceStatus: document.getElementById("referenceStatus"),
         referenceBanner: document.getElementById("referenceBanner"),
         referenceCard: document.getElementById("referenceCard"),
-        referencePreview: document.getElementById("referencePreview"),
         referenceMetaList: document.getElementById("referenceMetaList"),
         aiUploadInput: document.getElementById("aiUploadInput"),
         aiPreviewGrid: document.getElementById("aiPreviewGrid"),
         runAllBtn: document.getElementById("runAllBtn"),
+        downloadZipBtn: document.getElementById("downloadZipBtn"),
         workStatus: document.getElementById("workStatus"),
         workBanner: document.getElementById("workBanner"),
         progressBar: document.getElementById("progressBar"),
@@ -834,6 +837,7 @@
         });
         els.aiUploadInput.addEventListener("change", onAiUpload);
         els.runAllBtn.addEventListener("click", runAll);
+        els.downloadZipBtn.addEventListener("click", downloadAllAsZip);
         els.closeModalBtn.addEventListener("click", closeModal);
         els.imageModal.addEventListener("click", (event) => {
           if (event.target === els.imageModal) closeModal();
@@ -921,11 +925,9 @@
           throw new Error("Cette photo ne contient pas assez de métadonnées EXIF exploitables.");
         }
         const info = buildReferenceInfo(cleanExif, file.name);
-        const previewDataUrl = await makePreviewDataUrl(file, 900);
         return {
           exif: cleanExif,
           info,
-          previewDataUrl,
           createdAt: new Date().toISOString()
         };
       }
@@ -952,13 +954,11 @@
           els.referenceStatus.className = "status-pill warn";
           els.referenceStatus.textContent = "Absent";
           els.referenceMetaList.innerHTML = "";
-          els.referencePreview.removeAttribute("src");
           return;
         }
 
         els.referenceStatus.className = "status-pill";
         els.referenceStatus.textContent = "En cache";
-        els.referencePreview.src = profile.previewDataUrl || "";
         const rows = [
           ["Source", profile.info.sourceName || "-"],
           ["Appareil", profile.info.device || "-"],
@@ -1076,6 +1076,7 @@
         try {
           const total = state.aiFiles.length;
           const usedNames = new Set();
+          const sessionGps = createSessionGpsJitter(state.referenceProfile.exif);
           for (let i = 0; i < total; i += 1) {
             setProgress((i / total) * 100);
             const disruptedBlob = await disruptWatermark(state.aiFiles[i], (stage, status) => {
@@ -1089,7 +1090,9 @@
               disruptedBlob,
               state.referenceProfile.exif,
               captureDate,
-              imageName
+              imageName,
+              sessionGps,
+              i
             );
             const url = URL.createObjectURL(injected.blob);
             state.outputs[i] = {
@@ -1118,7 +1121,9 @@
         const hasReference = Boolean(state.referenceProfile);
         const hasReferenceCandidate = hasReference || Boolean(els.referenceInput.files && els.referenceInput.files[0]);
         const hasImages = isValidAiCount(state.aiFiles.length);
+        const hasCompleteOutputs = hasImages && state.outputs.length === state.aiFiles.length && state.outputs.every(Boolean);
         els.runAllBtn.disabled = state.running || !hasReferenceCandidate || !hasImages;
+        els.downloadZipBtn.disabled = state.running || !hasCompleteOutputs;
 
         if (state.running) {
           els.workStatus.className = "status-pill";
@@ -1141,6 +1146,50 @@
         });
         state.outputs = [];
         state.outputMeta = [];
+        updateControls();
+      }
+
+      async function downloadAllAsZip() {
+        clearBanner(els.workBanner);
+        if (!window.JSZip) {
+          showBanner(els.workBanner, "JSZip n'est pas chargé. Vérifie la connexion au CDN.", "warn");
+          return;
+        }
+        if (!state.outputs.length || !state.outputs.every(Boolean)) {
+          showBanner(els.workBanner, "Aucun lot complet à zipper. Lance d'abord le traitement.", "warn");
+          return;
+        }
+
+        setBusy(els.downloadZipBtn, true, "ZIP...");
+        try {
+          const zip = new window.JSZip();
+          const used = new Set();
+          for (const output of state.outputs) {
+            const name = makeRandomNumericName(used, ".jpg");
+            zip.file(name, output.blob);
+          }
+          const zipBlob = await zip.generateAsync({ type: "blob", compression: "STORE" });
+          downloadBlob(zipBlob, makeRandomNumericName(new Set(), ".zip"));
+          showBanner(els.workBanner, "ZIP généré.", "success");
+        } catch (error) {
+          showBanner(els.workBanner, `Erreur ZIP: ${error.message}`);
+        } finally {
+          setBusy(els.downloadZipBtn, false);
+          updateControls();
+          refreshIcons();
+        }
+      }
+
+      function makeRandomNumericName(usedNames, extension) {
+        for (let i = 0; i < 10000; i += 1) {
+          const value = String(Math.floor(10000000 + Math.random() * 90000000));
+          const candidate = `${value}${extension}`;
+          if (!usedNames.has(candidate)) {
+            usedNames.add(candidate);
+            return candidate;
+          }
+        }
+        return `${Date.now()}${extension}`;
       }
 
       function setProgress(percent) {
@@ -1290,13 +1339,13 @@
       function setBusy(button, busy, label) {
         button.disabled = busy;
         if (busy) {
-          button.dataset.prevLabel = button.textContent;
+          button.dataset.prevHtml = button.innerHTML;
           button.innerHTML = `<span class="spinner" aria-hidden="true"></span>${label || "Traitement..."}`;
           return;
         }
-        if (button.dataset.prevLabel) {
-          button.textContent = button.dataset.prevLabel;
-          delete button.dataset.prevLabel;
+        if (button.dataset.prevHtml) {
+          button.innerHTML = button.dataset.prevHtml;
+          delete button.dataset.prevHtml;
         }
       }
 
@@ -1498,13 +1547,13 @@
         }
       }
 
-      async function injectExifFromReference(targetBlob, referenceExif, date, imageFilename) {
+      async function injectExifFromReference(targetBlob, referenceExif, date, imageFilename, sessionGps, imageIndex) {
         const exifDict = cloneExifDict(referenceExif);
         ensureExifShape(exifDict);
         stripEmbeddedThumbnail(exifDict);
 
         const jpeg = await blobToJpegDataUrlWithSize(targetBlob);
-        const applied = applyDynamicExif(exifDict, referenceExif, date, imageFilename, jpeg.width, jpeg.height);
+        const applied = applyDynamicExif(exifDict, referenceExif, date, imageFilename, jpeg.width, jpeg.height, sessionGps, imageIndex);
         const cleaned = sanitizeExifDict(exifDict);
         const exifBytes = window.piexif.dump(cleaned);
         const insertedDataUrl = window.piexif.insert(exifBytes, jpeg.dataUrl);
@@ -1514,7 +1563,7 @@
         };
       }
 
-      function applyDynamicExif(exifDict, referenceExif, date, imageFilename, width, height) {
+      function applyDynamicExif(exifDict, referenceExif, date, imageFilename, width, height, sessionGps, imageIndex) {
         const imageIfd = window.piexif.ImageIFD;
         const exifIfd = window.piexif.ExifIFD;
         const gpsIfd = window.piexif.GPSIFD;
@@ -1578,11 +1627,16 @@
         setExifTagSafe(exifDict, "Exif", exifIfd.SceneCaptureType, 0, false);
         setExifTagSafe(exifDict, "Exif", exifIfd.SensingMethod, 2, false);
 
+        const shiftedGps = getSessionGpsCoordinates(referenceExif, sessionGps, imageIndex);
         if (exifDict.GPS && Object.keys(exifDict.GPS).length > 0) {
+          if (shiftedGps) {
+            writeGpsCoordinates(exifDict.GPS, shiftedGps.latitude, shiftedGps.longitude);
+          }
           setExifTagSafe(exifDict, "GPS", gpsIfd.GPSDateStamp, gpsUtc.dateStamp, false);
           setExifTagSafe(exifDict, "GPS", gpsIfd.GPSTimeStamp, gpsUtc.timeStamp, false);
           setExifTagSafe(exifDict, "GPS", gpsIfd.GPSSpeedRef, "K", false);
           setExifTagSafe(exifDict, "GPS", gpsIfd.GPSSpeed, decimalToRational(randomBetween(0, 0.35), 1000), false);
+          setExifTagSafe(exifDict, "GPS", gpsIfd.GPSHPositioningError || 31, decimalToRational(randomBetween(7, 32), 1000), false);
         }
 
         return {
@@ -1597,6 +1651,9 @@
           focal35: lens.focal35,
           lensModel: lens.lensModel,
           digitalZoom,
+          latitude: shiftedGps ? shiftedGps.latitude : null,
+          longitude: shiftedGps ? shiftedGps.longitude : null,
+          gpsSessionShift: shiftedGps ? shiftedGps.shiftLabel : "",
           width,
           height,
           subsec
@@ -1700,6 +1757,7 @@
               { label: "Focale", value: focal ? `${roundTo(focal, 2)} mm (${applied.focal35} mm eq.)` : "-" },
               { label: "Objectif", value: lensModel || "-" },
               { label: "Zoom digital", value: `${applied.digitalZoom}x` },
+              { label: "GPS session", value: applied.gpsSessionShift || formatGps({ gpsPresent: Object.keys(gps).length > 0, latitude: coords ? coords.latitude : null, longitude: coords ? coords.longitude : null }) },
               { label: "Dimensions EXIF", value: `${applied.width} x ${applied.height}` }
             ]
           };
@@ -1817,6 +1875,58 @@
           latitude: dmsToDecimal(latDms, latRef),
           longitude: dmsToDecimal(lonDms, lonRef)
         };
+      }
+
+      function createSessionGpsJitter(referenceExif) {
+        const coords = extractGpsCoordinates(referenceExif?.GPS || null);
+        if (!coords || !Number.isFinite(coords.latitude) || !Number.isFinite(coords.longitude)) {
+          return null;
+        }
+
+        return {
+          baseLatitude: coords.latitude,
+          baseLongitude: coords.longitude,
+          latitudeOffsetArcSec: randomBetween(-0.055, 0.055),
+          longitudeOffsetArcSec: randomBetween(-0.12, 0.12)
+        };
+      }
+
+      function getSessionGpsCoordinates(referenceExif, sessionGps, imageIndex) {
+        if (!sessionGps) return null;
+        const perImageLatArcSec = randomBetween(-0.012, 0.012) + (imageIndex * 0.002);
+        const perImageLonArcSec = randomBetween(-0.018, 0.018) + (imageIndex * 0.0025);
+        const latitude = sessionGps.baseLatitude + ((sessionGps.latitudeOffsetArcSec + perImageLatArcSec) / 3600);
+        const longitude = sessionGps.baseLongitude + ((sessionGps.longitudeOffsetArcSec + perImageLonArcSec) / 3600);
+        const shift = {
+          gpsPresent: true,
+          latitude,
+          longitude
+        };
+        return {
+          latitude,
+          longitude,
+          shiftLabel: `${formatGps(shift)} (${roundTo(sessionGps.longitudeOffsetArcSec + perImageLonArcSec, 3)}" lon)`
+        };
+      }
+
+      function writeGpsCoordinates(gpsDict, latitude, longitude) {
+        const gpsIfd = window.piexif.GPSIFD;
+        gpsDict[gpsIfd.GPSLatitudeRef] = latitude >= 0 ? "N" : "S";
+        gpsDict[gpsIfd.GPSLatitude] = decimalToDmsRational(Math.abs(latitude));
+        gpsDict[gpsIfd.GPSLongitudeRef] = longitude >= 0 ? "E" : "W";
+        gpsDict[gpsIfd.GPSLongitude] = decimalToDmsRational(Math.abs(longitude));
+      }
+
+      function decimalToDmsRational(value) {
+        const degrees = Math.floor(value);
+        const minuteFloat = (value - degrees) * 60;
+        const minutes = Math.floor(minuteFloat);
+        const seconds = (minuteFloat - minutes) * 60;
+        return [
+          [degrees, 1],
+          [minutes, 1],
+          [Math.round(seconds * 1000), 1000]
+        ];
       }
 
       function dmsToDecimal(dms, ref) {
