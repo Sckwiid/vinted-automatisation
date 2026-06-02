@@ -70,7 +70,9 @@
       min-width: 0;
     }
 
-    input[type="file"] {
+    input[type="file"],
+    input[type="time"],
+    select {
       width: 100%;
       min-height: 46px;
       border: 1px solid var(--border);
@@ -81,6 +83,10 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    select {
+      cursor: pointer;
     }
 
     input[type="file"]::file-selector-button {
@@ -184,6 +190,26 @@
       display: none !important;
     }
 
+    .options-popover {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: #00000080;
+    }
+
+    .options-popover[hidden] {
+      display: none !important;
+    }
+
+    .options-sheet {
+      width: min(980px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+    }
+
     .panel-title {
       display: flex;
       align-items: center;
@@ -223,6 +249,23 @@
     .field label {
       color: #dadada;
       font-weight: 650;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: #dadada;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-row input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: var(--accent);
     }
 
     .actions {
@@ -411,6 +454,61 @@
       display: grid;
       gap: var(--space-3);
       grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+    }
+
+    .pack-grid {
+      display: grid;
+      gap: var(--space-3);
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      margin-top: var(--space-3);
+    }
+
+    .pack-item {
+      border: 1px solid #2b3340;
+      background: #111722;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .pack-item img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #101214;
+    }
+
+    .pack-item-title {
+      margin: 0;
+      color: #eeeeee;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .pack-ranges {
+      display: grid;
+      gap: var(--space-3);
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      margin-top: var(--space-3);
+    }
+
+    .pack-range {
+      border: 1px solid #293742;
+      background: #111a20;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .thumb-card,
@@ -748,6 +846,7 @@
               <button class="btn primary" id="runAllBtn" type="button" disabled><i data-lucide="wand-sparkles"></i>Perturber + injecter EXIF</button>
             </div>
             <div class="actions">
+              <button class="btn ghost" id="openOptionsBtn" type="button"><i data-lucide="settings-2"></i>Options</button>
               <button class="btn primary" id="downloadZipBtn" type="button" disabled><i data-lucide="archive"></i>Télécharger toutes les images en ZIP</button>
             </div>
 
@@ -777,6 +876,27 @@
       </div>
     </div>
   </main>
+
+  <div class="options-popover" id="optionsPanel" hidden>
+    <div class="panel options-sheet">
+      <div class="panel-title">
+        <h2>Options</h2>
+        <button class="btn ghost icon-only" id="closeOptionsBtn" type="button" aria-label="Fermer les options">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <label class="toggle-row">
+        <input id="packModeToggle" type="checkbox">
+        Activer les packs horaires
+      </label>
+
+      <div id="packOptionsBody" hidden>
+        <div class="pack-grid" id="packGrid"></div>
+        <div class="pack-ranges" id="packRanges"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="modal" id="imageModal" aria-hidden="true">
     <button type="button" class="btn ghost modal-close" id="closeModalBtn">Fermer</button>
@@ -815,7 +935,10 @@
         outputMeta: [],
         stages: [],
         running: false,
-        profilePopupDismissed: false
+        profilePopupDismissed: false,
+        packModeEnabled: false,
+        packAssignments: [],
+        packRanges: {}
       };
 
       const els = {
@@ -832,7 +955,14 @@
         aiUploadInput: document.getElementById("aiUploadInput"),
         aiPreviewGrid: document.getElementById("aiPreviewGrid"),
         runAllBtn: document.getElementById("runAllBtn"),
+        openOptionsBtn: document.getElementById("openOptionsBtn"),
         downloadZipBtn: document.getElementById("downloadZipBtn"),
+        optionsPanel: document.getElementById("optionsPanel"),
+        closeOptionsBtn: document.getElementById("closeOptionsBtn"),
+        packModeToggle: document.getElementById("packModeToggle"),
+        packOptionsBody: document.getElementById("packOptionsBody"),
+        packGrid: document.getElementById("packGrid"),
+        packRanges: document.getElementById("packRanges"),
         workStatus: document.getElementById("workStatus"),
         workBanner: document.getElementById("workBanner"),
         progressBar: document.getElementById("progressBar"),
@@ -875,6 +1005,16 @@
         });
         els.aiUploadInput.addEventListener("change", onAiUpload);
         els.runAllBtn.addEventListener("click", runAll);
+        els.openOptionsBtn.addEventListener("click", openOptionsPanel);
+        els.closeOptionsBtn.addEventListener("click", closeOptionsPanel);
+        els.optionsPanel.addEventListener("click", (event) => {
+          if (event.target === els.optionsPanel) closeOptionsPanel();
+        });
+        els.packModeToggle.addEventListener("change", () => {
+          state.packModeEnabled = Boolean(els.packModeToggle.checked);
+          syncPackOptions();
+          renderPackOptions();
+        });
         els.downloadZipBtn.addEventListener("click", downloadAllAsZip);
         els.closeModalBtn.addEventListener("click", closeModal);
         els.imageModal.addEventListener("click", (event) => {
@@ -1026,7 +1166,9 @@
         clearOutputs();
         resetProgress();
         state.stages = makeStageArray(state.aiFiles.length);
+        syncPackOptions();
         renderAiPreviews();
+        renderPackOptions();
         renderStages();
         renderResults();
         updateControls();
@@ -1115,6 +1257,7 @@
           const total = state.aiFiles.length;
           const usedNames = new Set();
           const sessionGps = createSessionGpsJitter(state.referenceProfile.exif);
+          const timeContext = createTimeContextForRun();
           for (let i = 0; i < total; i += 1) {
             setProgress((i / total) * 100);
             const disruptedBlob = await disruptWatermark(state.aiFiles[i], (stage, status) => {
@@ -1122,7 +1265,7 @@
             });
 
             updateStage(i, "exif", "running");
-            const captureDate = new Date(Date.now() + (i * 1700));
+            const captureDate = getCaptureDateForImage(i, timeContext);
             const imageName = buildIphoneLikeFilename(i, state.referenceProfile.info.sourceName || "", usedNames);
             const injected = await injectExifFromReference(
               disruptedBlob,
@@ -1180,6 +1323,193 @@
         }
       }
 
+      function openOptionsPanel() {
+        syncPackOptions();
+        renderPackOptions();
+        els.optionsPanel.hidden = false;
+        refreshIcons();
+      }
+
+      function closeOptionsPanel() {
+        els.optionsPanel.hidden = true;
+      }
+
+      function syncPackOptions() {
+        state.packAssignments = state.aiFiles.map((_, index) => {
+          const current = Number(state.packAssignments[index]);
+          return Number.isInteger(current) && current >= 1 ? current : 1;
+        });
+        ensurePackRange(1);
+        getUsedPackIds().forEach(ensurePackRange);
+      }
+
+      function renderPackOptions() {
+        els.packModeToggle.checked = state.packModeEnabled;
+        els.packOptionsBody.hidden = !state.packModeEnabled;
+        els.packGrid.innerHTML = "";
+        els.packRanges.innerHTML = "";
+
+        if (!state.packModeEnabled) return;
+
+        if (!state.aiFiles.length) {
+          const empty = document.createElement("div");
+          empty.className = "stage-item";
+          empty.textContent = "Ajoute des images IA pour configurer les packs.";
+          els.packGrid.appendChild(empty);
+          return;
+        }
+
+        const packLimit = Math.max(1, Math.min(MAX_AI_COUNT, state.aiFiles.length));
+        state.aiFiles.forEach((file, index) => {
+          const item = document.createElement("div");
+          item.className = "pack-item";
+
+          const imgHtml = state.aiUrls[index]
+            ? `<img src="${state.aiUrls[index]}" alt="Photo ${index + 1}">`
+            : "";
+          const options = Array.from({ length: packLimit }, (_, i) => {
+            const packId = i + 1;
+            const selected = Number(state.packAssignments[index] || 1) === packId ? "selected" : "";
+            return `<option value="${packId}" ${selected}>Pack ${packId}</option>`;
+          }).join("");
+
+          item.innerHTML = `
+            ${imgHtml}
+            <p class="pack-item-title">Photo ${index + 1}</p>
+            <label>
+              Pack
+              <select data-pack-select="${index}">${options}</select>
+            </label>
+          `;
+          els.packGrid.appendChild(item);
+        });
+
+        els.packGrid.querySelectorAll("[data-pack-select]").forEach((select) => {
+          select.addEventListener("change", () => {
+            const index = Number(select.getAttribute("data-pack-select"));
+            state.packAssignments[index] = Number(select.value);
+            ensurePackRange(Number(select.value));
+            renderPackOptions();
+          });
+        });
+
+        getUsedPackIds().forEach((packId) => {
+          const range = ensurePackRange(packId);
+          const box = document.createElement("div");
+          box.className = "pack-range";
+          box.innerHTML = `
+            <h3>Pack ${packId}</h3>
+            <div class="time-grid">
+              <label>
+                Début
+                <input type="time" value="${range.start}" data-range-start="${packId}">
+              </label>
+              <label>
+                Fin
+                <input type="time" value="${range.end}" data-range-end="${packId}">
+              </label>
+            </div>
+          `;
+          els.packRanges.appendChild(box);
+        });
+
+        els.packRanges.querySelectorAll("[data-range-start]").forEach((input) => {
+          input.addEventListener("change", () => {
+            const packId = Number(input.getAttribute("data-range-start"));
+            ensurePackRange(packId).start = input.value || defaultTimeRangeForPack(packId).start;
+          });
+        });
+        els.packRanges.querySelectorAll("[data-range-end]").forEach((input) => {
+          input.addEventListener("change", () => {
+            const packId = Number(input.getAttribute("data-range-end"));
+            ensurePackRange(packId).end = input.value || defaultTimeRangeForPack(packId).end;
+          });
+        });
+      }
+
+      function getUsedPackIds() {
+        const ids = Array.from(new Set(state.packAssignments.map((value) => Number(value) || 1)));
+        ids.sort((a, b) => a - b);
+        return ids;
+      }
+
+      function ensurePackRange(packId) {
+        const id = String(packId);
+        if (!state.packRanges[id]) {
+          state.packRanges[id] = defaultTimeRangeForPack(packId);
+        }
+        return state.packRanges[id];
+      }
+
+      function defaultTimeRangeForPack(packId) {
+        const start = new Date(Date.now() + ((packId - 1) * 30 * 60 * 1000));
+        const end = new Date(start.getTime() + (20 * 60 * 1000));
+        return {
+          start: formatTimeInput(start),
+          end: formatTimeInput(end)
+        };
+      }
+
+      function formatTimeInput(date) {
+        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      }
+
+      function createTimeContextForRun() {
+        if (!state.packModeEnabled) return null;
+        syncPackOptions();
+
+        const now = new Date();
+        const packCounts = {};
+        state.packAssignments.forEach((packId) => {
+          const key = String(packId || 1);
+          packCounts[key] = (packCounts[key] || 0) + 1;
+        });
+
+        const packs = {};
+        Object.keys(packCounts).forEach((packId) => {
+          const range = ensurePackRange(Number(packId));
+          const start = timeInputToDate(range.start, now);
+          let end = timeInputToDate(range.end, now);
+          if (end <= start) {
+            end = new Date(end.getTime() + (24 * 60 * 60 * 1000));
+          }
+          const maxOffsetMs = Math.max(0, (packCounts[packId] - 1) * 4200 + 1800);
+          const latestBase = Math.max(start.getTime(), end.getTime() - maxOffsetMs);
+          const baseMs = start.getTime() + (Math.random() * Math.max(1, latestBase - start.getTime()));
+          packs[packId] = {
+            baseMs,
+            nextIndex: 0
+          };
+        });
+
+        return { packs };
+      }
+
+      function getCaptureDateForImage(index, timeContext) {
+        if (!timeContext) {
+          return new Date(Date.now() + (index * 1700));
+        }
+        const packId = String(state.packAssignments[index] || 1);
+        const pack = timeContext.packs[packId];
+        if (!pack) {
+          return new Date(Date.now() + (index * 1700));
+        }
+        const offset = (pack.nextIndex * randomBetween(1800, 4200)) + randomBetween(0, 900);
+        pack.nextIndex += 1;
+        return new Date(pack.baseMs + offset);
+      }
+
+      function timeInputToDate(value, baseDate) {
+        const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+        const date = new Date(baseDate);
+        if (!match) {
+          date.setSeconds(0, 0);
+          return date;
+        }
+        date.setHours(Number(match[1]), Number(match[2]), Math.floor(randomBetween(0, 50)), 0);
+        return date;
+      }
+
       function clearOutputs() {
         state.outputs.forEach((entry) => {
           if (entry && entry.url) URL.revokeObjectURL(entry.url);
@@ -1205,7 +1535,7 @@
           const zip = new window.JSZip();
           const used = new Set();
           for (const output of state.outputs) {
-            const name = makeRandomNumericName(used, ".jpg");
+            const name = ensureUniqueZipFilename(output.filename || "IMG_0001.JPG", used);
             zip.file(name, output.blob);
           }
           const zipBlob = await zip.generateAsync({ type: "blob", compression: "STORE" });
@@ -1230,6 +1560,20 @@
           }
         }
         return `${Date.now()}${extension}`;
+      }
+
+      function ensureUniqueZipFilename(filename, usedNames) {
+        const match = String(filename || "").match(/^(.*?)(\.[^.]+)?$/);
+        const base = (match && match[1] ? match[1] : "IMG_0001").replace(/[^A-Za-z0-9_ -]/g, "_");
+        const ext = (match && match[2] ? match[2] : ".JPG").toUpperCase();
+        let candidate = `${base}${ext}`;
+        let index = 1;
+        while (usedNames.has(candidate)) {
+          candidate = `${base}_${index}${ext}`;
+          index += 1;
+        }
+        usedNames.add(candidate);
+        return candidate;
       }
 
       function setProgress(percent) {
@@ -2018,13 +2362,13 @@
         let number = extractIphoneSequenceFromName(sourceName);
         for (let i = 0; i < 10000; i += 1) {
           const current = String((number + index + i) % 10000).padStart(4, "0");
-          const candidate = `IMG_E${current}.JPG`;
+          const candidate = `IMG_${current}.JPG`;
           if (!usedNames.has(candidate)) {
             usedNames.add(candidate);
             return candidate;
           }
         }
-        return `IMG_E${String(index + 1).padStart(4, "0")}.JPG`;
+        return `IMG_${String(index + 1).padStart(4, "0")}.JPG`;
       }
 
       function extractIphoneSequenceFromName(name) {
