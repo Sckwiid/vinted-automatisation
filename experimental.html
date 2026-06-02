@@ -12,9 +12,8 @@
       --text-base: 16px;
       --line-height: 1.45;
       --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 18px;
-
+      --radius-md: 8px;
+      --radius-lg: 8px;
       --space-1: 4px;
       --space-2: 8px;
       --space-3: 12px;
@@ -22,17 +21,17 @@
       --space-5: 20px;
       --space-6: 24px;
       --space-8: 32px;
-
-      --bg: #111111;
-      --surface: #1a1a1a;
-      --surface-2: #151515;
-      --border: #2d2d2d;
+      --bg: #0f1012;
+      --surface: #171819;
+      --surface-2: #111315;
+      --border: #2d2f32;
       --text: #f1f1f1;
       --muted: #a8a8a8;
       --accent: #00998a;
       --accent-hover: #00ad9d;
       --danger: #ff5d5d;
       --success: #21c464;
+      --warn: #ffd166;
       --focus: #24bdae66;
       --shadow: 0 10px 34px #00000045;
     }
@@ -41,19 +40,20 @@
       box-sizing: border-box;
     }
 
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       min-height: 100%;
       background:
-        radial-gradient(circle at 85% -10%, #0f3d39 0%, transparent 38%),
-        radial-gradient(circle at 10% 120%, #0d2524 0%, transparent 45%),
-        #0f1012;
+        linear-gradient(135deg, #101112 0%, #0e1615 44%, #101112 100%);
       color: var(--text);
       font-family: var(--font-family);
       font-size: var(--text-base);
       line-height: var(--line-height);
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     img {
@@ -61,28 +61,22 @@
       max-width: 100%;
     }
 
-    button, input, textarea {
+    button,
+    input,
+    textarea {
       font: inherit;
       color: inherit;
       min-width: 0;
     }
 
-    input[type="text"],
-    input[type="password"],
-    input[type="file"],
-    textarea {
+    input[type="file"] {
       width: 100%;
-      min-height: 44px;
+      min-height: 46px;
       border: 1px solid var(--border);
       background: #17191c;
       border-radius: var(--radius-sm);
-      padding: 10px 12px;
-      outline: none;
-      transition: border-color 0.2s ease, background 0.2s ease;
-    }
-
-    input[type="file"] {
       padding: 8px 10px;
+      outline: none;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -96,16 +90,9 @@
       padding: 7px 11px;
       margin-right: 10px;
       cursor: pointer;
-      transition: background 0.2s ease, border-color 0.2s ease;
     }
 
-    input[type="file"]::file-selector-button:hover {
-      background: #27303a;
-      border-color: #495564;
-    }
-
-    input:focus,
-    textarea:focus {
+    input:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--focus);
     }
@@ -113,8 +100,8 @@
     .header {
       position: sticky;
       top: 0;
-      z-index: 40;
-      background: #0e0f11d8;
+      z-index: 30;
+      background: #0e0f11e8;
       backdrop-filter: blur(10px);
       border-bottom: 1px solid #2a2d317a;
       box-shadow: 0 10px 22px #00000033;
@@ -131,23 +118,24 @@
       padding: 10px 0;
     }
 
-    .header-title-wrap {
+    .brand {
       min-width: 0;
     }
 
-    .header-title {
+    .brand h1 {
       margin: 0;
-      font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+      font-size: 1.25rem;
       line-height: 1.15;
     }
 
-    .header-subtitle {
-      margin: 4px 0 0;
+    .brand p {
+      margin: 3px 0 0;
       color: var(--muted);
       font-size: 0.9rem;
     }
 
     .app {
+      min-height: calc(100vh - 68px);
       padding: var(--space-4) 0 var(--space-8);
     }
 
@@ -158,16 +146,27 @@
       gap: var(--space-4);
     }
 
-    .card {
-      background: linear-gradient(180deg, #16181b, #141518);
-      border: 1px solid #2a2d31;
+    .workspace {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: var(--space-4);
+      align-items: start;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, #171819, #141516);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow);
       padding: 16px;
       min-width: 0;
     }
 
-    .title-row {
+    .panel.compact {
+      padding: 14px;
+    }
+
+    .panel-title {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -175,45 +174,68 @@
       margin-bottom: var(--space-3);
     }
 
-    h2, h3, h4 {
+    h2,
+    h3,
+    h4 {
       margin: 0;
       line-height: 1.2;
+      letter-spacing: 0;
     }
 
     h2 {
-      font-size: clamp(1.1rem, 2.6vw, 1.7rem);
+      font-size: 1.18rem;
     }
 
     h3 {
-      font-size: clamp(1rem, 2.2vw, 1.2rem);
+      font-size: 1rem;
     }
 
     .hint {
-      color: var(--muted);
       margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
     }
 
-    .grid-2 {
+    .field {
       display: grid;
-      gap: var(--space-4);
-      grid-template-columns: 1fr;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+    }
+
+    .field label {
+      color: #dadada;
+      font-weight: 650;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      margin-top: var(--space-3);
     }
 
     .btn {
       border: 1px solid transparent;
       border-radius: var(--radius-md);
       min-height: 46px;
-      padding: 10px 16px;
+      padding: 10px 14px;
       cursor: pointer;
-      transition: transform 0.12s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.12s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: var(--space-2);
       text-decoration: none;
-      font-weight: 650;
+      font-weight: 700;
       white-space: nowrap;
       touch-action: manipulation;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
     }
 
     .btn:disabled {
@@ -224,7 +246,7 @@
 
     .btn.primary {
       background: var(--accent);
-      color: #041615;
+      color: #061413;
       border-color: var(--accent);
     }
 
@@ -244,124 +266,31 @@
       background: #ffffff08;
     }
 
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-3);
-      align-items: center;
-    }
-
-    .stepper {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-2);
-    }
-
-    .step-chip {
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: #121417;
-      min-height: 50px;
-      padding: 0 var(--space-3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2);
-      color: var(--muted);
-    }
-
-    .step-chip .circle {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 1px solid currentColor;
-      display: grid;
-      place-items: center;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
-    .step-chip.active {
-      color: var(--accent);
-      border-color: #0f6f66;
-      box-shadow: 0 0 0 1px #0f6f66 inset;
-    }
-
-    .step-chip.done {
-      color: var(--success);
-      border-color: #1b5f38;
-      box-shadow: 0 0 0 1px #1b5f38 inset;
-    }
-
     .status-pill {
-      border: 1px solid #2f5f59;
-      color: #9ce8df;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 4px 9px;
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.86rem;
-      background: #0c2e2a;
+      border: 1px solid #34524e;
+      background: #0d2825;
+      color: #bff8ef;
+      font-size: 0.82rem;
+      font-weight: 700;
       white-space: nowrap;
     }
 
     .status-pill.warn {
-      border-color: #5e4a2c;
-      color: #ffd99a;
-      background: #2f2415;
+      border-color: #64532d;
+      background: #2d2412;
+      color: #ffe0a6;
     }
 
     .status-pill.error {
-      border-color: #653030;
-      color: #ffc2c2;
-      background: #341717;
-    }
-
-    .preview-grid {
-      margin-top: var(--space-3);
-      display: grid;
-      gap: var(--space-3);
-      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-    }
-
-    .thumb-card,
-    .thumb-placeholder {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      border-radius: var(--radius-sm);
-      border: 1px dashed #2d3f41;
-      background: #11181a;
-      overflow: hidden;
-    }
-
-    .thumb-placeholder {
-      display: grid;
-      place-items: center;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .thumb-card {
-      cursor: pointer;
-      border: 1px solid #2a3c40;
-      padding: 0;
-    }
-
-    .thumb-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .thumb-label {
-      position: absolute;
-      left: 8px;
-      top: 8px;
-      background: #0000009a;
-      color: #fff;
-      font-size: 0.78rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid #ffffff40;
+      border-color: #6a2e2e;
+      background: #351818;
+      color: #ffd1d1;
     }
 
     .inline-banner {
@@ -392,6 +321,116 @@
       color: #ffe6b3;
     }
 
+    .reference-card {
+      border: 1px solid #283437;
+      background: #111718;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: grid;
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+    }
+
+    .reference-preview {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #101214;
+      object-fit: cover;
+    }
+
+    .meta-list {
+      margin: 0;
+      display: grid;
+      gap: 7px;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: var(--space-2);
+      font-size: 0.88rem;
+      border-bottom: 1px solid #ffffff0a;
+      padding-bottom: 6px;
+    }
+
+    .meta-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .meta-row dt {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .meta-row dd {
+      margin: 0;
+      color: #eeeeee;
+      overflow-wrap: anywhere;
+    }
+
+    .run-panel {
+      display: grid;
+      gap: var(--space-4);
+    }
+
+    .upload-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-3);
+      align-items: end;
+    }
+
+    .preview-grid {
+      display: grid;
+      gap: var(--space-3);
+      grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+    }
+
+    .thumb-card,
+    .thumb-placeholder {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid #2a3c40;
+      background: #11181a;
+    }
+
+    .thumb-placeholder {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      border-style: dashed;
+      font-size: 0.9rem;
+    }
+
+    .thumb-card {
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .thumb-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumb-label {
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      background: #0000009a;
+      color: #fff;
+      font-size: 0.78rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #ffffff40;
+    }
+
     .progress-wrap {
       width: 100%;
       height: 10px;
@@ -399,7 +438,6 @@
       border: 1px solid #234240;
       background: #0c1516;
       overflow: hidden;
-      margin-top: var(--space-3);
     }
 
     .progress-bar {
@@ -416,7 +454,6 @@
     }
 
     .stage-list {
-      margin-top: var(--space-3);
       display: grid;
       gap: var(--space-2);
     }
@@ -428,21 +465,22 @@
       padding: 10px;
     }
 
-    .stage-item-title {
+    .stage-title {
       margin: 0 0 8px;
-      font-weight: 650;
+      font-weight: 700;
     }
 
     .stage-tags {
-      display: grid;
-      gap: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
     }
 
     .stage-tag {
       border-radius: 999px;
       border: 1px solid #38434f;
       padding: 5px 9px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #d2d9df;
       background: #1a222a;
       width: fit-content;
@@ -467,8 +505,7 @@
       color: #ffb6b6;
     }
 
-    .result-grid {
-      margin-top: var(--space-3);
+    .results-grid {
       display: grid;
       gap: var(--space-3);
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -477,10 +514,10 @@
     .result-card {
       border: 1px solid #2b3340;
       background: #111722;
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       overflow: hidden;
       display: grid;
-      gap: 0;
+      min-width: 0;
     }
 
     .result-card img {
@@ -488,17 +525,61 @@
       aspect-ratio: 4 / 5;
       object-fit: cover;
       cursor: pointer;
+      background: #0d1014;
+    }
+
+    .result-body {
+      display: grid;
+      gap: var(--space-3);
+      padding: 10px;
+      border-top: 1px solid #273143;
+      background: #10151f;
     }
 
     .result-meta {
       margin: 0;
-      padding: 10px;
       color: #bdd5e4;
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       line-height: 1.4;
       white-space: pre-line;
-      background: #10151f;
-      border-top: 1px solid #273143;
+      overflow-wrap: anywhere;
+    }
+
+    .changed-list {
+      display: grid;
+      gap: var(--space-2);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .changed-item {
+      border: 1px solid #293742;
+      background: #111a20;
+      border-radius: var(--radius-sm);
+      padding: 9px;
+      min-width: 0;
+    }
+
+    .changed-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 3px;
+    }
+
+    .changed-item strong {
+      display: block;
+      color: #f1f1f1;
+      font-size: 0.92rem;
+      overflow-wrap: anywhere;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff66;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
     }
 
     .modal {
@@ -531,15 +612,6 @@
       min-width: 44px;
     }
 
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #ffffff66;
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-
     @keyframes spin {
       to {
         transform: rotate(360deg);
@@ -554,44 +626,46 @@
       }
     }
 
-    @media (min-width: 860px) {
-      .grid-2 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .upload-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .actions .btn,
+      .upload-strip .btn {
+        width: 100%;
       }
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 520px) {
       .header-inner,
       .container {
-        width: min(1180px, calc(100% - 16px));
+        width: min(1180px, calc(100% - 14px));
       }
 
       .header-inner {
-        min-height: 60px;
-      }
-
-      .stepper {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 4px;
-        scroll-snap-type: x mandatory;
-      }
-
-      .step-chip {
-        flex: 0 0 auto;
-        min-width: 144px;
-        justify-content: flex-start;
-        padding: 0 12px;
-        scroll-snap-align: start;
-      }
-
-      .actions {
         align-items: stretch;
+        flex-direction: column;
       }
 
-      .actions .btn {
+      .header-inner .btn {
         width: 100%;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      .meta-row {
+        grid-template-columns: 96px 1fr;
+      }
+
+      .preview-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
   </style>
@@ -599,79 +673,81 @@
 <body>
   <header class="header">
     <div class="header-inner">
-      <div class="header-title-wrap">
-        <h1 class="header-title">Vinted Prep - Expérimental</h1>
-        <p class="header-subtitle">Profil EXIF de référence en cache local + bouton tout-en-un</p>
+      <div class="brand">
+        <h1>Vinted Prep Experimental</h1>
+        <p>Profil EXIF en cache, perturbation puis injection en une action.</p>
       </div>
-      <a class="btn ghost" href="./index.html">Retour au mode principal</a>
+      <a class="btn ghost" href="./index.html"><i data-lucide="arrow-left"></i>Retour index.html</a>
     </div>
   </header>
 
   <main class="app">
     <div class="container">
-      <section class="stepper" aria-label="Étapes mode expérimental">
-        <div class="step-chip active" data-step-chip="1"><span class="circle">1</span><span>Profil EXIF</span></div>
-        <div class="step-chip" data-step-chip="2"><span class="circle">2</span><span>Upload IA</span></div>
-        <div class="step-chip" data-step-chip="3"><span class="circle">3</span><span>Tout faire</span></div>
-      </section>
+      <div class="workspace">
+        <aside class="panel compact">
+          <div class="panel-title">
+            <h2>Profil EXIF</h2>
+            <span class="status-pill warn" id="referenceStatus">Absent</span>
+          </div>
+          <p class="hint">Une photo réelle sert de base. Le profil reste dans le cache navigateur.</p>
 
-      <section class="card">
-        <div class="title-row">
-          <h2>Profil EXIF de référence</h2>
-          <span class="status-pill warn" id="templateStatusPill">Profil absent</span>
-        </div>
-        <p class="hint">Ajoute 1 vraie photo JPEG une seule fois: on garde son appareil + localisation en cache local navigateur. Si cache supprimé, il faudra recharger une photo.</p>
-        <div class="grid-2">
-          <div>
-            <label for="templateInput">Photo réelle de référence (JPEG)</label>
-            <input id="templateInput" type="file" accept="image/jpeg">
-            <div class="actions" style="margin-top: 12px;">
-              <button class="btn primary" id="saveTemplateBtn" type="button">Analyser + enregistrer profil</button>
-              <button class="btn ghost" id="clearTemplateBtn" type="button">Effacer le profil</button>
+          <div class="field">
+            <label for="referenceInput">Photo réelle de référence</label>
+            <input id="referenceInput" type="file" accept="image/jpeg">
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="saveReferenceBtn" type="button"><i data-lucide="database"></i>Enregistrer le profil</button>
+            <button class="btn ghost" id="clearReferenceBtn" type="button"><i data-lucide="trash-2"></i>Effacer</button>
+          </div>
+
+          <div class="inline-banner" id="referenceBanner"></div>
+
+          <div class="reference-card" id="referenceCard" hidden>
+            <img class="reference-preview" id="referencePreview" alt="Photo de référence">
+            <dl class="meta-list" id="referenceMetaList"></dl>
+          </div>
+        </aside>
+
+        <section class="run-panel">
+          <div class="panel">
+            <div class="panel-title">
+              <h2>Traitement direct</h2>
+              <span class="status-pill" id="workStatus">Prêt</span>
             </div>
+
+            <div class="upload-strip">
+              <div class="field">
+                <label for="aiUploadInput">Images IA à traiter (1 à 5)</label>
+                <input id="aiUploadInput" type="file" accept="image/jpeg,image/png" multiple>
+              </div>
+              <button class="btn primary" id="runAllBtn" type="button" disabled><i data-lucide="wand-sparkles"></i>Perturber + injecter EXIF</button>
+            </div>
+
+            <div class="preview-grid" id="aiPreviewGrid"></div>
+            <div class="inline-banner" id="workBanner"></div>
           </div>
-          <div>
-            <h3>Résumé du profil</h3>
-            <pre class="result-meta" id="templateSummary">Aucun profil chargé.</pre>
+
+          <div class="panel">
+            <div class="panel-title">
+              <h2>Avancement</h2>
+              <span class="hint" id="progressLabel">0%</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="stage-list" id="stageList"></div>
           </div>
-        </div>
-        <div class="inline-banner" id="templateBanner"></div>
-      </section>
 
-      <section class="card">
-        <div class="title-row">
-          <h2>Images IA (1 à 5)</h2>
-        </div>
-        <p class="hint">Tu peux ajouter les images en une ou plusieurs sélections. Le bouton tout-en-un fera perturbation + injection EXIF directement.</p>
-        <input id="aiUploadInput" type="file" accept="image/jpeg,image/png" multiple>
-        <div class="preview-grid" id="aiPreviewGrid"></div>
-        <div class="inline-banner" id="aiBanner"></div>
-      </section>
-
-      <section class="card">
-        <div class="title-row">
-          <h2>Traitement unique</h2>
-        </div>
-        <p class="hint">Le pipeline applique Shake -> Stir -> Crush, puis injecte EXIF: date/heure actuelles + appareil/localisation du profil + paramètres photo légèrement variables (ISO/exposition/etc.).</p>
-        <div class="actions">
-          <button class="btn primary" id="runAllBtn" type="button">Perturber + Injecter EXIF</button>
-        </div>
-
-        <div class="progress-wrap">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <div class="progress-label" id="progressLabel">0%</div>
-        <div class="stage-list" id="stageList"></div>
-        <div class="inline-banner" id="runBanner"></div>
-      </section>
-
-      <section class="card">
-        <div class="title-row">
-          <h2>Résultats EXIF</h2>
-        </div>
-        <p class="hint">Mobile: appui long sur la photo -> « Enregistrer dans Photos » (en anglais: Save to Photos). Desktop: utilise le bouton « Télécharger EXIF brut » (évite « Enregistrer l'image sous » qui peut retirer les métadonnées selon le navigateur).</p>
-        <div class="result-grid" id="resultGrid"></div>
-      </section>
+          <div class="panel">
+            <div class="panel-title">
+              <h2>Résultats</h2>
+              <span class="hint">Mobile: appui long puis Save to Photos. PC: bouton de téléchargement brut.</span>
+            </div>
+            <div class="results-grid" id="resultsGrid"></div>
+          </div>
+        </section>
+      </div>
     </div>
   </main>
 
@@ -682,23 +758,9 @@
 
   <script>
     (function () {
-      const STORAGE_TEMPLATE_KEY = "vintedPrep.experimental.templateExif.v1";
-      const STORAGE_TEMPLATE_INFO_KEY = "vintedPrep.experimental.templateInfo.v1";
-      const MAX_AI_COUNT = 5;
+      const STORAGE_KEY = "vintedPrep.experimental.referenceProfile.v3";
       const MIN_AI_COUNT = 1;
-
-      const DISRUPT_DEFAULT_OPTIONS = {
-        shake: {
-          rotationRange: 0.5,
-          scaleRange: [1.01, 1.02]
-        },
-        stir: {
-          noiseAmplitude: 5
-        },
-        crush: {
-          quality: 0.85
-        }
-      };
+      const MAX_AI_COUNT = 5;
 
       function makeStageState() {
         return {
@@ -709,67 +771,69 @@
         };
       }
 
-      function makeNullArray(count) {
-        return Array.from({ length: count }, () => null);
-      }
-
       function makeStageArray(count) {
         return Array.from({ length: count }, () => makeStageState());
       }
 
+      function makeNullArray(count) {
+        return Array.from({ length: count }, () => null);
+      }
+
       const state = {
         storageAvailable: false,
-        templateExif: null,
-        templateInfo: null,
+        referenceProfile: null,
         aiFiles: [],
-        aiPreviewUrls: [],
-        results: [],
-        resultMeta: [],
+        aiUrls: [],
+        outputs: [],
+        outputMeta: [],
         stages: [],
         running: false
       };
 
       const els = {
-        templateInput: document.getElementById("templateInput"),
-        saveTemplateBtn: document.getElementById("saveTemplateBtn"),
-        clearTemplateBtn: document.getElementById("clearTemplateBtn"),
-        templateStatusPill: document.getElementById("templateStatusPill"),
-        templateSummary: document.getElementById("templateSummary"),
-        templateBanner: document.getElementById("templateBanner"),
+        referenceInput: document.getElementById("referenceInput"),
+        saveReferenceBtn: document.getElementById("saveReferenceBtn"),
+        clearReferenceBtn: document.getElementById("clearReferenceBtn"),
+        referenceStatus: document.getElementById("referenceStatus"),
+        referenceBanner: document.getElementById("referenceBanner"),
+        referenceCard: document.getElementById("referenceCard"),
+        referencePreview: document.getElementById("referencePreview"),
+        referenceMetaList: document.getElementById("referenceMetaList"),
         aiUploadInput: document.getElementById("aiUploadInput"),
         aiPreviewGrid: document.getElementById("aiPreviewGrid"),
-        aiBanner: document.getElementById("aiBanner"),
         runAllBtn: document.getElementById("runAllBtn"),
+        workStatus: document.getElementById("workStatus"),
+        workBanner: document.getElementById("workBanner"),
         progressBar: document.getElementById("progressBar"),
         progressLabel: document.getElementById("progressLabel"),
         stageList: document.getElementById("stageList"),
-        runBanner: document.getElementById("runBanner"),
-        resultGrid: document.getElementById("resultGrid"),
+        resultsGrid: document.getElementById("resultsGrid"),
         imageModal: document.getElementById("imageModal"),
         closeModalBtn: document.getElementById("closeModalBtn"),
         modalImage: document.getElementById("modalImage")
       };
 
-      const stepChips = Array.from(document.querySelectorAll("[data-step-chip]"));
-
       function init() {
         state.storageAvailable = canUseLocalStorage();
-        loadTemplateFromCache();
+        loadReferenceProfile();
         bindEvents();
-        renderAiPreviewGrid();
-        renderResultGrid();
-        renderStageList();
-        renderStepState();
-        if (window.lucide && window.lucide.createIcons) {
-          window.lucide.createIcons();
-        }
+        renderReference();
+        renderAiPreviews();
+        renderStages();
+        renderResults();
+        updateControls();
+        refreshIcons();
       }
 
       function bindEvents() {
-        els.saveTemplateBtn.addEventListener("click", onSaveTemplateProfile);
-        els.clearTemplateBtn.addEventListener("click", onClearTemplateProfile);
-        els.aiUploadInput.addEventListener("change", onAiFilesChanged);
-        els.runAllBtn.addEventListener("click", onRunAll);
+        els.saveReferenceBtn.addEventListener("click", saveReferenceFromInput);
+        els.clearReferenceBtn.addEventListener("click", clearReferenceProfile);
+        els.referenceInput.addEventListener("change", () => {
+          clearBanner(els.referenceBanner);
+          updateControls();
+        });
+        els.aiUploadInput.addEventListener("change", onAiUpload);
+        els.runAllBtn.addEventListener("click", runAll);
         els.closeModalBtn.addEventListener("click", closeModal);
         els.imageModal.addEventListener("click", (event) => {
           if (event.target === els.imageModal) closeModal();
@@ -779,9 +843,15 @@
         });
       }
 
+      function refreshIcons() {
+        if (window.lucide && window.lucide.createIcons) {
+          window.lucide.createIcons();
+        }
+      }
+
       function canUseLocalStorage() {
         try {
-          const testKey = "__vinted_prep_experimental_test__";
+          const testKey = "__vinted_prep_experimental_storage_test__";
           window.localStorage.setItem(testKey, "1");
           window.localStorage.removeItem(testKey);
           return true;
@@ -790,168 +860,138 @@
         }
       }
 
-      function safeStorageGet(key) {
-        if (!state.storageAvailable) return null;
+      function loadReferenceProfile() {
+        if (!state.storageAvailable) return;
         try {
-          return window.localStorage.getItem(key);
+          const raw = window.localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const profile = JSON.parse(raw);
+          if (!profile || !profile.exif || !profile.info) return;
+          state.referenceProfile = profile;
         } catch (_) {
-          return null;
+          state.referenceProfile = null;
         }
       }
 
-      function safeStorageSet(key, value) {
-        if (!state.storageAvailable) return false;
-        try {
-          window.localStorage.setItem(key, value);
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }
-
-      function safeStorageRemove(key) {
-        if (!state.storageAvailable) return false;
-        try {
-          window.localStorage.removeItem(key);
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }
-
-      function loadTemplateFromCache() {
-        const rawExif = safeStorageGet(STORAGE_TEMPLATE_KEY);
-        const rawInfo = safeStorageGet(STORAGE_TEMPLATE_INFO_KEY);
-        if (!rawExif || !rawInfo) {
-          renderTemplateState();
-          return;
-        }
-
-        try {
-          const exif = JSON.parse(rawExif);
-          const info = JSON.parse(rawInfo);
-          if (!exif || typeof exif !== "object" || !hasEnoughTemplateData(exif)) throw new Error("invalid exif");
-          state.templateExif = exif;
-          state.templateInfo = info;
-        } catch (_) {
-          state.templateExif = null;
-          state.templateInfo = null;
-          safeStorageRemove(STORAGE_TEMPLATE_KEY);
-          safeStorageRemove(STORAGE_TEMPLATE_INFO_KEY);
-        }
-        renderTemplateState();
-      }
-
-      function renderTemplateState() {
-        const hasTemplate = Boolean(state.templateExif);
-        if (!hasTemplate) {
-          els.templateStatusPill.className = "status-pill warn";
-          els.templateStatusPill.textContent = "Profil absent";
-          els.templateSummary.textContent = state.storageAvailable
-            ? "Aucun profil chargé.\nAjoute une photo réelle JPEG pour créer le profil EXIF."
-            : "Aucun profil chargé.\nCe navigateur bloque le stockage local: le profil sera conservé seulement jusqu'au rechargement de page.";
-          renderStepState();
-          return;
-        }
-
-        els.templateStatusPill.className = "status-pill";
-        els.templateStatusPill.textContent = "Profil chargé";
-        const info = state.templateInfo || {};
-        const summary = [];
-        summary.push(`Source: ${info.sourceName || "photo-référence.jpg"}`);
-        summary.push(`Appareil: ${info.makeModel || "—"}`);
-        summary.push(`Localisation: ${info.gps || "—"}`);
-        summary.push(`Date profil: ${info.savedAt || "—"}`);
-        summary.push(state.storageAvailable ? "Stockage: cache local navigateur actif." : "Stockage: mémoire temporaire (pas de cache persistant).");
-        els.templateSummary.textContent = summary.join("\n");
-        renderStepState();
-      }
-
-      async function onSaveTemplateProfile() {
-        clearBanner(els.templateBanner);
-        const file = els.templateInput.files && els.templateInput.files[0];
+      async function saveReferenceFromInput() {
+        clearBanner(els.referenceBanner);
+        const file = els.referenceInput.files && els.referenceInput.files[0];
         if (!file) {
-          showBanner(els.templateBanner, "Ajoute d'abord une photo réelle JPEG.", "warn");
+          showBanner(els.referenceBanner, "Ajoute une photo réelle JPEG pour créer le profil.", "warn");
           return;
         }
         if (!isJpegFile(file)) {
-          showBanner(els.templateBanner, "Le profil EXIF doit venir d'un JPEG.", "warn");
+          showBanner(els.referenceBanner, "La photo de référence doit être un JPEG.", "warn");
           return;
         }
 
-        setBusy(els.saveTemplateBtn, true, "Analyse...");
+        setBusy(els.saveReferenceBtn, true, "Analyse...");
         try {
-          const dataUrl = await fileToDataURL(file);
-          let exif = null;
-          try {
-            exif = window.piexif.load(dataUrl);
-          } catch (_) {
-            exif = null;
-          }
-          if (!exif || typeof exif !== "object") {
-            throw new Error("Aucune métadonnée EXIF lisible sur cette photo.");
-          }
-
-          const sanitized = sanitizeTemplateExif(exif);
-          if (!hasEnoughTemplateData(sanitized)) {
-            throw new Error("Le profil contient trop peu d'EXIF exploitables (appareil/localisation absents).");
-          }
-
-          const info = buildTemplateInfo(sanitized, file.name);
-          state.templateExif = sanitized;
-          state.templateInfo = info;
-
-          if (state.storageAvailable) {
-            const okExif = safeStorageSet(STORAGE_TEMPLATE_KEY, JSON.stringify(sanitized));
-            const okInfo = safeStorageSet(STORAGE_TEMPLATE_INFO_KEY, JSON.stringify(info));
-            if (!okExif || !okInfo) {
-              showBanner(els.templateBanner, "Profil créé, mais impossible d'écrire dans le cache navigateur.", "warn");
-            } else {
-              showBanner(els.templateBanner, "Profil EXIF enregistré dans le cache local navigateur.", "success");
-            }
-          } else {
-            showBanner(els.templateBanner, "Profil EXIF chargé en mémoire temporaire (pas de persistance locale).", "warn");
-          }
-
-          renderTemplateState();
+          const profile = await createReferenceProfileFromFile(file);
+          persistReferenceProfile(profile, els.referenceBanner);
+          renderReference();
+          updateControls();
         } catch (error) {
-          showBanner(els.templateBanner, `Erreur profil EXIF: ${error.message}`);
+          showBanner(els.referenceBanner, `Erreur profil EXIF: ${error.message}`);
         } finally {
-          setBusy(els.saveTemplateBtn, false);
+          setBusy(els.saveReferenceBtn, false);
+          refreshIcons();
         }
       }
 
-      function onClearTemplateProfile() {
-        state.templateExif = null;
-        state.templateInfo = null;
-        safeStorageRemove(STORAGE_TEMPLATE_KEY);
-        safeStorageRemove(STORAGE_TEMPLATE_INFO_KEY);
-        renderTemplateState();
-        showBanner(els.templateBanner, "Profil EXIF supprimé.");
+      function clearReferenceProfile() {
+        state.referenceProfile = null;
+        if (state.storageAvailable) {
+          try {
+            window.localStorage.removeItem(STORAGE_KEY);
+          } catch (_) {
+            // ignore
+          }
+        }
+        renderReference();
+        updateControls();
+        showBanner(els.referenceBanner, "Profil EXIF supprimé.", "warn");
       }
 
-      async function onAiFilesChanged(event) {
-        clearBanner(els.aiBanner);
+      async function createReferenceProfileFromFile(file) {
+        const dataUrl = await fileToDataURL(file);
+        const exif = window.piexif.load(dataUrl);
+        const cleanExif = sanitizeExifDict(exif);
+        if (!hasUsefulReferenceExif(cleanExif)) {
+          throw new Error("Cette photo ne contient pas assez de métadonnées EXIF exploitables.");
+        }
+        const info = buildReferenceInfo(cleanExif, file.name);
+        const previewDataUrl = await makePreviewDataUrl(file, 900);
+        return {
+          exif: cleanExif,
+          info,
+          previewDataUrl,
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      function persistReferenceProfile(profile, bannerEl) {
+        state.referenceProfile = profile;
+        if (state.storageAvailable) {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+            showBanner(bannerEl, "Profil EXIF enregistré dans le cache navigateur.", "success");
+          } catch (_) {
+            showBanner(bannerEl, "Profil chargé, mais le cache navigateur est plein ou bloqué.", "warn");
+          }
+        } else {
+          showBanner(bannerEl, "Profil chargé en mémoire temporaire. Si la page recharge, il faudra remettre la photo.", "warn");
+        }
+      }
+
+      function renderReference() {
+        const profile = state.referenceProfile;
+        els.referenceCard.hidden = !profile;
+
+        if (!profile) {
+          els.referenceStatus.className = "status-pill warn";
+          els.referenceStatus.textContent = "Absent";
+          els.referenceMetaList.innerHTML = "";
+          els.referencePreview.removeAttribute("src");
+          return;
+        }
+
+        els.referenceStatus.className = "status-pill";
+        els.referenceStatus.textContent = "En cache";
+        els.referencePreview.src = profile.previewDataUrl || "";
+        const rows = [
+          ["Source", profile.info.sourceName || "-"],
+          ["Appareil", profile.info.device || "-"],
+          ["Objectif", profile.info.lens || "-"],
+          ["GPS", profile.info.gps || "-"],
+          ["ISO base", profile.info.iso || "-"],
+          ["Expo base", profile.info.exposure || "-"],
+          ["Ouverture", profile.info.fNumber || "-"],
+          ["Logiciel", profile.info.software || "-"]
+        ];
+        els.referenceMetaList.innerHTML = rows.map(([label, value]) => (
+          `<div class="meta-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`
+        )).join("");
+      }
+
+      async function onAiUpload(event) {
+        clearBanner(els.workBanner);
         const incoming = Array.from(event.target.files || []);
         const merged = mergeSelectedFiles(state.aiFiles, incoming);
         if (merged.rejected) {
-          showBanner(els.aiBanner, `Maximum ${MAX_AI_COUNT} images IA.`);
+          showBanner(els.workBanner, `Maximum ${MAX_AI_COUNT} images IA.`, "warn");
         }
-
         state.aiFiles = merged.files;
-        revokeUrls(state.aiPreviewUrls);
-        state.aiPreviewUrls = await Promise.all(state.aiFiles.map((f) => fileToObjectURL(f)));
         event.target.value = "";
-
-        state.results.forEach((entry) => entry && entry.url && URL.revokeObjectURL(entry.url));
-        state.results = [];
-        state.resultMeta = [];
+        revokeUrls(state.aiUrls);
+        state.aiUrls = await Promise.all(state.aiFiles.map((file) => fileToObjectURL(file)));
+        clearOutputs();
         resetProgress();
-        resetStages();
-        renderAiPreviewGrid();
-        renderResultGrid();
-        renderStageList();
-        renderStepState();
+        state.stages = makeStageArray(state.aiFiles.length);
+        renderAiPreviews();
+        renderStages();
+        renderResults();
+        updateControls();
       }
 
       function mergeSelectedFiles(currentFiles, incomingFiles) {
@@ -972,20 +1012,16 @@
         };
       }
 
-      function isValidAiCount(count) {
-        return Number.isInteger(count) && count >= MIN_AI_COUNT && count <= MAX_AI_COUNT;
-      }
-
-      function renderAiPreviewGrid() {
+      function renderAiPreviews() {
         els.aiPreviewGrid.innerHTML = "";
-        const count = Math.max(state.aiPreviewUrls.length, 3);
-        for (let i = 0; i < count; i += 1) {
-          const url = state.aiPreviewUrls[i];
+        const slots = Math.max(state.aiUrls.length, 3);
+        for (let i = 0; i < slots; i += 1) {
+          const url = state.aiUrls[i];
           if (!url) {
-            const slot = document.createElement("div");
-            slot.className = "thumb-placeholder";
-            slot.textContent = `Photo ${i + 1}`;
-            els.aiPreviewGrid.appendChild(slot);
+            const placeholder = document.createElement("div");
+            placeholder.className = "thumb-placeholder";
+            placeholder.textContent = `Photo ${i + 1}`;
+            els.aiPreviewGrid.appendChild(placeholder);
             continue;
           }
           const btn = document.createElement("button");
@@ -1000,9 +1036,111 @@
         }
       }
 
-      function resetProgress() {
-        els.progressBar.style.width = "0%";
-        els.progressLabel.textContent = "0%";
+      async function runAll() {
+        clearBanner(els.workBanner);
+        if (!state.referenceProfile) {
+          const referenceFile = els.referenceInput.files && els.referenceInput.files[0];
+          if (!referenceFile) {
+            showBanner(els.workBanner, "Profil EXIF manquant. Ajoute la photo de référence une fois.", "warn");
+            return;
+          }
+          if (!isJpegFile(referenceFile)) {
+            showBanner(els.workBanner, "La photo de référence doit être un JPEG.", "warn");
+            return;
+          }
+          try {
+            const profile = await createReferenceProfileFromFile(referenceFile);
+            persistReferenceProfile(profile, els.referenceBanner);
+            renderReference();
+          } catch (error) {
+            showBanner(els.workBanner, `Impossible de créer le profil EXIF: ${error.message}`);
+            return;
+          }
+        }
+        if (!isValidAiCount(state.aiFiles.length)) {
+          showBanner(els.workBanner, `Ajoute entre ${MIN_AI_COUNT} et ${MAX_AI_COUNT} images IA.`, "warn");
+          return;
+        }
+
+        state.running = true;
+        clearOutputs();
+        state.outputs = makeNullArray(state.aiFiles.length);
+        state.outputMeta = makeNullArray(state.aiFiles.length);
+        state.stages = makeStageArray(state.aiFiles.length);
+        resetProgress();
+        renderStages();
+        renderResults();
+        updateControls();
+        setBusy(els.runAllBtn, true, "Traitement...");
+
+        try {
+          const total = state.aiFiles.length;
+          const usedNames = new Set();
+          for (let i = 0; i < total; i += 1) {
+            setProgress((i / total) * 100);
+            const disruptedBlob = await disruptWatermark(state.aiFiles[i], (stage, status) => {
+              updateStage(i, stage, status);
+            });
+
+            updateStage(i, "exif", "running");
+            const captureDate = new Date(Date.now() + (i * 1700));
+            const imageName = buildIphoneLikeFilename(i, state.referenceProfile.info.sourceName || "", usedNames);
+            const injected = await injectExifFromReference(
+              disruptedBlob,
+              state.referenceProfile.exif,
+              captureDate,
+              imageName
+            );
+            const url = URL.createObjectURL(injected.blob);
+            state.outputs[i] = {
+              blob: injected.blob,
+              url,
+              filename: imageName
+            };
+            state.outputMeta[i] = await extractOutputMeta(injected.blob, injected.applied);
+            updateStage(i, "exif", "done");
+            setProgress(((i + 1) / total) * 100);
+            renderResults();
+          }
+          showBanner(els.workBanner, "Traitement terminé: perturbation + EXIF injecté.", "success");
+        } catch (error) {
+          showBanner(els.workBanner, `Erreur traitement: ${error.message}`);
+        } finally {
+          state.running = false;
+          setBusy(els.runAllBtn, false);
+          updateControls();
+          renderStages();
+          refreshIcons();
+        }
+      }
+
+      function updateControls() {
+        const hasReference = Boolean(state.referenceProfile);
+        const hasReferenceCandidate = hasReference || Boolean(els.referenceInput.files && els.referenceInput.files[0]);
+        const hasImages = isValidAiCount(state.aiFiles.length);
+        els.runAllBtn.disabled = state.running || !hasReferenceCandidate || !hasImages;
+
+        if (state.running) {
+          els.workStatus.className = "status-pill";
+          els.workStatus.textContent = "En cours";
+        } else if (!hasReference) {
+          els.workStatus.className = "status-pill warn";
+          els.workStatus.textContent = "Profil requis";
+        } else if (!hasImages) {
+          els.workStatus.className = "status-pill warn";
+          els.workStatus.textContent = "Images requises";
+        } else {
+          els.workStatus.className = "status-pill";
+          els.workStatus.textContent = "Prêt";
+        }
+      }
+
+      function clearOutputs() {
+        state.outputs.forEach((entry) => {
+          if (entry && entry.url) URL.revokeObjectURL(entry.url);
+        });
+        state.outputs = [];
+        state.outputMeta = [];
       }
 
       function setProgress(percent) {
@@ -1011,29 +1149,41 @@
         els.progressLabel.textContent = `${Math.round(clamped)}%`;
       }
 
-      function resetStages() {
-        state.stages = makeStageArray(state.aiFiles.length);
+      function resetProgress() {
+        setProgress(0);
       }
 
-      function renderStageList() {
-        els.stageList.innerHTML = "";
-        if (!state.aiFiles.length) return;
+      function updateStage(index, stage, status) {
+        if (!state.stages[index]) return;
+        state.stages[index][stage] = status;
+        renderStages();
+      }
 
-        for (let i = 0; i < state.aiFiles.length; i += 1) {
-          const stage = state.stages[i] || makeStageState();
+      function renderStages() {
+        els.stageList.innerHTML = "";
+        if (!state.aiFiles.length) {
+          const empty = document.createElement("div");
+          empty.className = "stage-item";
+          empty.textContent = "Aucune image en attente.";
+          els.stageList.appendChild(empty);
+          return;
+        }
+
+        state.aiFiles.forEach((_, index) => {
+          const stage = state.stages[index] || makeStageState();
           const item = document.createElement("div");
           item.className = "stage-item";
           item.innerHTML = `
-            <p class="stage-item-title">Photo ${i + 1}</p>
+            <p class="stage-title">Photo ${index + 1}</p>
             <div class="stage-tags">
-              <span class="stage-tag ${stage.shake}">Shake (rotation ±0.5, scale 1.01-1.02): ${labelStage(stage.shake)}</span>
-              <span class="stage-tag ${stage.stir}">Stir (gaussien Box-Muller, chunk 65_536): ${labelStage(stage.stir)}</span>
-              <span class="stage-tag ${stage.crush}">Crush (JPEG 0.85 + fallback 0.92): ${labelStage(stage.crush)}</span>
-              <span class="stage-tag ${stage.exif}">Injection EXIF (profil + date/heure actuelles): ${labelStage(stage.exif)}</span>
+              <span class="stage-tag ${stage.shake}">Shake: ${labelStage(stage.shake)}</span>
+              <span class="stage-tag ${stage.stir}">Stir: ${labelStage(stage.stir)}</span>
+              <span class="stage-tag ${stage.crush}">Crush: ${labelStage(stage.crush)}</span>
+              <span class="stage-tag ${stage.exif}">EXIF dynamique: ${labelStage(stage.exif)}</span>
             </div>
           `;
           els.stageList.appendChild(item);
-        }
+        });
       }
 
       function labelStage(status) {
@@ -1043,75 +1193,90 @@
         return "attente";
       }
 
-      function updateStage(index, key, value) {
-        if (!state.stages[index]) return;
-        state.stages[index][key] = value;
-        renderStageList();
-      }
+      function renderResults() {
+        els.resultsGrid.innerHTML = "";
+        if (!state.aiFiles.length) {
+          const empty = document.createElement("div");
+          empty.className = "thumb-placeholder";
+          empty.textContent = "Résultats en attente";
+          els.resultsGrid.appendChild(empty);
+          return;
+        }
 
-      function renderResultGrid() {
-        els.resultGrid.innerHTML = "";
-        if (!state.aiFiles.length) return;
-
-        for (let i = 0; i < state.aiFiles.length; i += 1) {
-          const output = state.results[i];
-          const meta = state.resultMeta[i];
+        state.aiFiles.forEach((_, index) => {
+          const output = state.outputs[index];
+          const meta = state.outputMeta[index];
           const card = document.createElement("article");
           card.className = "result-card";
 
-          if (!output || !output.url) {
+          if (output && output.url) {
+            const img = document.createElement("img");
+            img.src = output.url;
+            img.alt = `Résultat ${index + 1}`;
+            img.addEventListener("click", () => openModal(output.url));
+            card.appendChild(img);
+          } else {
             const placeholder = document.createElement("div");
             placeholder.className = "thumb-placeholder";
             placeholder.style.aspectRatio = "4 / 5";
-            placeholder.textContent = `Photo ${i + 1} en attente`;
+            placeholder.textContent = `Photo ${index + 1}`;
             card.appendChild(placeholder);
-          } else {
-            const img = document.createElement("img");
-            img.src = output.url;
-            img.alt = `Résultat ${i + 1}`;
-            img.addEventListener("click", () => openModal(output.url));
-            card.appendChild(img);
           }
 
-          const lines = [];
-          lines.push(`Photo ${i + 1}`);
-          if (output) {
-            lines.push(`Nom simulé iPhone: ${output.filename}`);
-            if (meta) {
-              lines.push(`DateTime: ${meta.dateTime || "—"}`);
-              lines.push(`DateTimeOriginal: ${meta.dateTimeOriginal || "—"}`);
-              lines.push(`GPS: ${formatGps(meta)}`);
-            } else {
-              lines.push("EXIF: lecture en cours...");
-            }
-          } else {
-            lines.push("Aucun résultat pour le moment.");
-          }
+          const body = document.createElement("div");
+          body.className = "result-body";
+          const summary = document.createElement("pre");
+          summary.className = "result-meta";
+          summary.textContent = buildResultSummary(index, output, meta);
+          body.appendChild(summary);
 
-          const metaBox = document.createElement("pre");
-          metaBox.className = "result-meta";
-          metaBox.textContent = lines.join("\n");
-          card.appendChild(metaBox);
+          if (meta && meta.changed) {
+            const changes = document.createElement("div");
+            changes.className = "changed-list";
+            meta.changed.forEach((item) => {
+              const box = document.createElement("div");
+              box.className = "changed-item";
+              box.innerHTML = `<span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong>`;
+              changes.appendChild(box);
+            });
+            body.appendChild(changes);
+          }
 
           if (output && output.blob) {
             const actions = document.createElement("div");
             actions.className = "actions";
-            actions.style.padding = "10px";
-            actions.style.borderTop = "1px solid #273143";
-            actions.style.background = "#0f1420";
-            const downloadBtn = document.createElement("button");
-            downloadBtn.type = "button";
-            downloadBtn.className = "btn ghost";
-            downloadBtn.textContent = "Télécharger EXIF brut";
-            downloadBtn.addEventListener("click", () => {
-              downloadBlob(output.blob, output.filename || `IMG_${String(i + 1).padStart(4, "0")}.JPG`);
-            });
-            actions.appendChild(downloadBtn);
-            card.appendChild(actions);
+            actions.style.marginTop = "0";
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn ghost";
+            btn.innerHTML = '<i data-lucide="download"></i>Télécharger EXIF brut';
+            btn.addEventListener("click", () => downloadBlob(output.blob, output.filename));
+            actions.appendChild(btn);
+            body.appendChild(actions);
           }
 
-          els.resultGrid.appendChild(card);
+          card.appendChild(body);
+          els.resultsGrid.appendChild(card);
+        });
+        refreshIcons();
+      }
+
+      function buildResultSummary(index, output, meta) {
+        const lines = [`Photo ${index + 1}`];
+        if (!output) {
+          lines.push("En attente du traitement.");
+          return lines.join("\n");
         }
+        lines.push(`Nom: ${output.filename}`);
+        if (meta) {
+          lines.push(`Date EXIF: ${meta.dateTimeOriginal || meta.dateTime || "-"}`);
+          lines.push(`Appareil: ${meta.makeModel || "-"}`);
+          lines.push(`Objectif: ${meta.lensModel || "-"}`);
+          lines.push(`GPS: ${formatGps(meta)}`);
+        } else {
+          lines.push("Lecture EXIF en cours...");
+        }
+        return lines.join("\n");
       }
 
       function formatGps(meta) {
@@ -1122,103 +1287,7 @@
         return "présent";
       }
 
-      function renderStepState() {
-        const hasTemplate = Boolean(state.templateExif);
-        const aiReady = isValidAiCount(state.aiFiles.length);
-        const done = state.results.length > 0 && state.results.every(Boolean);
-
-        stepChips.forEach((chip) => {
-          const step = Number(chip.getAttribute("data-step-chip"));
-          chip.classList.remove("active", "done");
-          if (step === 1 && hasTemplate) chip.classList.add("done");
-          if (step === 2 && aiReady) chip.classList.add("done");
-          if (step === 3 && done) chip.classList.add("done");
-        });
-
-        if (!hasTemplate) {
-          stepChips[0].classList.add("active");
-        } else if (!aiReady) {
-          stepChips[1].classList.add("active");
-        } else {
-          stepChips[2].classList.add("active");
-        }
-
-        const canRun = hasTemplate && aiReady && !state.running;
-        els.runAllBtn.disabled = !canRun;
-      }
-
-      async function onRunAll() {
-        clearBanner(els.runBanner);
-        const hasTemplate = Boolean(state.templateExif);
-        if (!hasTemplate) {
-          showBanner(els.runBanner, "Crée d'abord le profil EXIF de référence.");
-          return;
-        }
-        if (!hasEnoughTemplateData(state.templateExif)) {
-          showBanner(els.runBanner, "Profil EXIF invalide ou incomplet. Recharge une vraie photo de référence.");
-          return;
-        }
-        if (!isValidAiCount(state.aiFiles.length)) {
-          showBanner(els.runBanner, `Ajoute entre ${MIN_AI_COUNT} et ${MAX_AI_COUNT} images IA.`);
-          return;
-        }
-
-        state.running = true;
-        state.results.forEach((entry) => entry && entry.url && URL.revokeObjectURL(entry.url));
-        state.results = makeNullArray(state.aiFiles.length);
-        state.resultMeta = makeNullArray(state.aiFiles.length);
-        resetStages();
-        resetProgress();
-        renderResultGrid();
-        renderStageList();
-        renderStepState();
-        setBusy(els.runAllBtn, true, "Traitement...");
-
-        try {
-          const count = state.aiFiles.length;
-          const filenameNumbers = new Set();
-
-          for (let i = 0; i < count; i += 1) {
-            setProgress((i / count) * 100);
-            const aiBlob = state.aiFiles[i];
-
-            const disrupted = await disruptWatermark(aiBlob, (stageName, status) => {
-              updateStage(i, stageName, status);
-            });
-
-            updateStage(i, "exif", "running");
-            const exifNow = new Date(Date.now() + (i * 1500));
-            const filename = buildIphoneLikeFilename(filenameNumbers);
-            const injected = await injectExifUsingTemplate(disrupted, state.templateExif, exifNow, filename);
-            const verify = await extractExifPreviewMeta(injected);
-            if (!verify || (!verify.dateTime && !verify.dateTimeOriginal && !verify.gpsPresent)) {
-              throw new Error(`EXIF non détecté après injection sur la photo ${i + 1}.`);
-            }
-            const url = URL.createObjectURL(injected);
-            state.results[i] = { blob: injected, url, filename };
-            state.resultMeta[i] = verify;
-            updateStage(i, "exif", "done");
-            setProgress(((i + 1) / count) * 100);
-            renderResultGrid();
-          }
-
-          showBanner(
-            els.runBanner,
-            "Traitement terminé. Sauvegarde chaque image depuis l'aperçu: appui long -> « Enregistrer dans Photos » (Save to Photos).",
-            "success"
-          );
-        } catch (error) {
-          showBanner(els.runBanner, `Erreur traitement: ${error.message}`);
-        } finally {
-          state.running = false;
-          setBusy(els.runAllBtn, false);
-          renderStepState();
-          renderStageList();
-        }
-      }
-
       function setBusy(button, busy, label) {
-        if (!button) return;
         button.disabled = busy;
         if (busy) {
           button.dataset.prevLabel = button.textContent;
@@ -1244,14 +1313,6 @@
         el.textContent = "";
       }
 
-      function revokeUrls(urls) {
-        urls.forEach((url) => {
-          if (url && url.startsWith("blob:")) {
-            URL.revokeObjectURL(url);
-          }
-        });
-      }
-
       function openModal(src) {
         if (!src) return;
         els.modalImage.src = src;
@@ -1263,6 +1324,34 @@
         els.imageModal.classList.remove("show");
         els.imageModal.setAttribute("aria-hidden", "true");
       }
+
+      function revokeUrls(urls) {
+        urls.forEach((url) => {
+          if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
+        });
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      const DISRUPT_DEFAULT_OPTIONS = {
+        shake: {
+          rotationRange: 0.5,
+          scaleRange: [1.01, 1.02]
+        },
+        stir: {
+          noiseAmplitude: 5
+        },
+        crush: {
+          quality: 0.85
+        }
+      };
 
       class GaussianRNG {
         constructor() {
@@ -1323,16 +1412,19 @@
           centerX - centerX * scale * cos + centerY * scale * sin,
           centerY - centerX * scale * sin - centerY * scale * cos
         );
+
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(image, 0, 0, width, height);
         ctx.restore();
+
         await nextTick();
       }
 
       async function applyStirExact(ctx, options = DISRUPT_DEFAULT_OPTIONS.stir) {
         const { width, height } = ctx.canvas;
         const { noiseAmplitude } = options;
+
         const imageData = ctx.getImageData(0, 0, width, height);
         const data = imageData.data;
         const pixelCount = width * height;
@@ -1349,6 +1441,7 @@
           data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noiseG[noiseIdx]));
           data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noiseB[noiseIdx]));
           noiseIdx += 1;
+
           if (noiseIdx % pixelsPerChunk === 0) {
             await nextTick();
           }
@@ -1360,10 +1453,13 @@
 
       async function applyCrushExact(canvas, options = DISRUPT_DEFAULT_OPTIONS.crush) {
         const { quality } = options;
-        const clamped = Math.max(0, Math.min(1, quality));
+        const clampedQuality = Math.max(0, Math.min(1, quality));
+
         try {
-          return canvas.toDataURL("image/jpeg", clamped);
-        } catch (_) {
+          const output = canvas.toDataURL("image/jpeg", clampedQuality);
+          return output;
+        } catch (error) {
+          console.warn("JPEG encoding failed, using default quality", error);
           return canvas.toDataURL("image/jpeg", 0.92);
         }
       }
@@ -1374,7 +1470,9 @@
         canvas.width = image.naturalWidth || image.width;
         canvas.height = image.naturalHeight || image.height;
         const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("Canvas indisponible.");
+        if (!ctx) {
+          throw new Error("Impossible de créer le contexte canvas.");
+        }
 
         let activeStage = "shake";
         try {
@@ -1400,168 +1498,259 @@
         }
       }
 
-      function sanitizeTemplateExif(rawExif) {
-        const output = {
-          "0th": {},
-          "Exif": {},
-          "GPS": {},
-          "Interop": {},
-          "1st": {},
-          "thumbnail": null
-        };
-        const ifds = ["0th", "Exif", "GPS", "Interop", "1st"];
-        ifds.forEach((ifd) => {
-          const src = rawExif && rawExif[ifd] ? rawExif[ifd] : {};
-          Object.keys(src).forEach((tag) => {
-            const numericTag = Number(tag);
-            if (!isExifTagSupported(ifd, numericTag)) return;
-            output[ifd][numericTag] = src[tag];
-          });
-        });
+      async function injectExifFromReference(targetBlob, referenceExif, date, imageFilename) {
+        const exifDict = cloneExifDict(referenceExif);
+        ensureExifShape(exifDict);
+        stripEmbeddedThumbnail(exifDict);
 
-        output["1st"] = {};
-        output["thumbnail"] = null;
-        delete output["0th"][513];
-        delete output["0th"][514];
-        return output;
-      }
-
-      function hasEnoughTemplateData(exifDict) {
-        if (!exifDict || typeof exifDict !== "object") return false;
-        const hasMake = Boolean(exifDict["0th"] && exifDict["0th"][window.piexif.ImageIFD.Make]);
-        const hasModel = Boolean(exifDict["0th"] && exifDict["0th"][window.piexif.ImageIFD.Model]);
-        const hasGps = Boolean(exifDict["GPS"] && Object.keys(exifDict["GPS"]).length > 0);
-        return hasMake || hasModel || hasGps;
-      }
-
-      function buildTemplateInfo(exifDict, sourceName) {
-        const make = exifDict?.["0th"]?.[window.piexif.ImageIFD.Make] || "";
-        const model = exifDict?.["0th"]?.[window.piexif.ImageIFD.Model] || "";
-        const gpsCoords = extractGpsCoordinates(exifDict?.["GPS"] || null);
-        return {
-          sourceName: sourceName || "photo.jpg",
-          savedAt: new Date().toLocaleString("fr-FR"),
-          makeModel: `${String(make || "").trim()} ${String(model || "").trim()}`.trim() || "—",
-          gps: gpsCoords && Number.isFinite(gpsCoords.latitude) && Number.isFinite(gpsCoords.longitude)
-            ? `${gpsCoords.latitude.toFixed(6)}, ${gpsCoords.longitude.toFixed(6)}`
-            : "absent"
-        };
-      }
-
-      async function injectExifUsingTemplate(targetBlob, templateExif, nowDate, imageFilename) {
-        const exifDict = deepCloneExif(templateExif);
-        if (!exifDict["0th"]) exifDict["0th"] = {};
-        if (!exifDict["Exif"]) exifDict["Exif"] = {};
-        if (!exifDict["GPS"]) exifDict["GPS"] = {};
-        if (!exifDict["Interop"]) exifDict["Interop"] = {};
-        exifDict["1st"] = {};
-        exifDict["thumbnail"] = null;
-        delete exifDict["0th"][513];
-        delete exifDict["0th"][514];
-
-        const nowExif = getExifDateTime(nowDate);
-        const tzOffset = getExifUtcOffset(nowDate);
-
-        setExifTagSafe(exifDict, "0th", window.piexif.ImageIFD.DateTime, nowExif, false);
-        setExifTagSafe(exifDict, "0th", window.piexif.ImageIFD.Orientation, 1, false);
-        setExifTagSafe(exifDict, "Exif", window.piexif.ExifIFD.DateTimeOriginal, nowExif, false);
-        setExifTagSafe(exifDict, "Exif", window.piexif.ExifIFD.DateTimeDigitized, nowExif, false);
-        setExifTagSafe(exifDict, "Exif", (window.piexif.ExifIFD.OffsetTime || 36880), tzOffset, false);
-        setExifTagSafe(exifDict, "Exif", (window.piexif.ExifIFD.OffsetTimeOriginal || 36881), tzOffset, false);
-        setExifTagSafe(exifDict, "Exif", (window.piexif.ExifIFD.OffsetTimeDigitized || 36882), tzOffset, false);
-
-        setExifTagSafe(exifDict, "0th", window.piexif.ImageIFD.DocumentName, imageFilename, false);
-        setExifTagSafe(exifDict, "0th", window.piexif.ImageIFD.ImageDescription, imageFilename, false);
-
-        applyRandomizedCaptureParams(exifDict, templateExif);
-
-        const jpegDataUrl = await fileToJpegDataUrl(targetBlob);
-        const cleaned = sanitizeTemplateExif(exifDict);
+        const jpeg = await blobToJpegDataUrlWithSize(targetBlob);
+        const applied = applyDynamicExif(exifDict, referenceExif, date, imageFilename, jpeg.width, jpeg.height);
+        const cleaned = sanitizeExifDict(exifDict);
         const exifBytes = window.piexif.dump(cleaned);
-        const inserted = window.piexif.insert(exifBytes, jpegDataUrl);
-        return dataURLToBlob(inserted);
+        const insertedDataUrl = window.piexif.insert(exifBytes, jpeg.dataUrl);
+        return {
+          blob: dataURLToBlob(insertedDataUrl),
+          applied
+        };
       }
 
-      function applyRandomizedCaptureParams(targetExif, sourceExif) {
-        const srcExif = sourceExif?.["Exif"] || {};
+      function applyDynamicExif(exifDict, referenceExif, date, imageFilename, width, height) {
+        const imageIfd = window.piexif.ImageIFD;
         const exifIfd = window.piexif.ExifIFD;
+        const gpsIfd = window.piexif.GPSIFD;
+        const refExif = referenceExif?.Exif || {};
+        const refZero = referenceExif?.["0th"] || {};
 
-        const baseIso = toNumber(srcExif[exifIfd.ISOSpeedRatings]) || 640;
-        const baseExposure = rationalToNumber(srcExif[exifIfd.ExposureTime]) || (1 / 60);
-        const baseF = rationalToNumber(srcExif[exifIfd.FNumber]) || 2.2;
-        const baseBias = signedRationalToNumber(srcExif[exifIfd.ExposureBiasValue]) || 0;
-
+        const nowExif = getExifDateTime(date);
+        const subsec = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+        const offset = getExifUtcOffset(date);
+        const gpsUtc = getGpsUtcParts(date);
+        const lens = chooseLensProfile(referenceExif);
+        const baseIso = toNumber(refExif[exifIfd.ISOSpeedRatings]) || 80;
+        const baseExposure = rationalToNumber(refExif[exifIfd.ExposureTime]) || 1 / 60;
         const iso = randomIsoNear(baseIso);
-        const exposure = clamp(baseExposure * Math.pow(2, randomBetween(-0.8, 0.8)), 1 / 4000, 1 / 8);
-        const fNumber = clamp(baseF + randomBetween(-0.25, 0.25), 1.4, 4.0);
-        const bias = clamp(baseBias + randomBetween(-0.34, 0.34), -0.7, 0.7);
+        const exposureTime = clamp(baseExposure * Math.pow(2, randomBetween(-0.85, 0.85)), 1 / 4000, 1 / 8);
+        const exposureBias = roundTo(clamp(randomBetween(-0.33, 0.33), -0.7, 0.7), 2);
+        const brightness = roundTo((toRationalNumber(refExif[exifIfd.BrightnessValue]) || 5) + randomBetween(-0.75, 0.75), 2);
+        const digitalZoom = chooseDigitalZoom(lens, refExif);
 
-        setExifTagSafe(targetExif, "Exif", exifIfd.ISOSpeedRatings, Math.round(iso), false);
-        setExifTagSafe(targetExif, "Exif", exifIfd.ExposureTime, toUnsignedRational(exposure, 1_000_000), false);
-        setExifTagSafe(targetExif, "Exif", exifIfd.FNumber, toUnsignedRational(fNumber, 100), false);
-        setExifTagSafe(targetExif, "Exif", exifIfd.ExposureBiasValue, toSignedRational(bias, 1000), false);
+        setExifTagSafe(exifDict, "0th", imageIfd.Make, refZero[imageIfd.Make] || "Apple", false);
+        setExifTagSafe(exifDict, "0th", imageIfd.Model, refZero[imageIfd.Model] || "iPhone 14 Pro Max", false);
+        setExifTagSafe(exifDict, "0th", imageIfd.Software, refZero[imageIfd.Software] || "26.4.2", false);
+        setExifTagSafe(exifDict, "0th", imageIfd.HostComputer, refZero[imageIfd.HostComputer] || refZero[imageIfd.Model] || "iPhone 14 Pro Max", false);
+        setExifTagSafe(exifDict, "0th", imageIfd.DateTime, nowExif, false);
+        setExifTagSafe(exifDict, "0th", imageIfd.Orientation, 1, false);
+        setExifTagSafe(exifDict, "0th", imageIfd.DocumentName, imageFilename, false);
+        setExifTagSafe(exifDict, "0th", imageIfd.ImageDescription, imageFilename, false);
+        setExifTagSafe(exifDict, "0th", imageIfd.XResolution, [72, 1], false);
+        setExifTagSafe(exifDict, "0th", imageIfd.YResolution, [72, 1], false);
+        setExifTagSafe(exifDict, "0th", imageIfd.ResolutionUnit, 2, false);
+        setExifTagSafe(exifDict, "0th", imageIfd.YCbCrPositioning, 1, false);
 
-        if (isExifTagSupported("Exif", exifIfd.ShutterSpeedValue)) {
-          const shutter = Math.log2(1 / exposure);
-          setExifTagSafe(targetExif, "Exif", exifIfd.ShutterSpeedValue, toSignedRational(shutter, 1000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.DateTimeOriginal, nowExif, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.DateTimeDigitized, nowExif, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.OffsetTime || 36880, offset, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.OffsetTimeOriginal || 36881, offset, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.OffsetTimeDigitized || 36882, offset, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.SubSecTimeOriginal, subsec, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.SubSecTimeDigitized, subsec, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ISOSpeedRatings, iso, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ExposureTime, decimalToRational(exposureTime, 1000000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ShutterSpeedValue, signedDecimalToRational(Math.log2(1 / exposureTime), 1000000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.FNumber, decimalToRational(lens.fNumber, 100), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ApertureValue, decimalToRational(Math.log2(lens.fNumber * lens.fNumber), 1000000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ExposureBiasValue, signedDecimalToRational(exposureBias, 100), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.BrightnessValue, signedDecimalToRational(brightness, 100), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.FocalLength, decimalToRational(lens.focalLength, 1000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.FocalLengthIn35mmFilm, lens.focal35, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.LensMake, "Apple", false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.LensModel, lens.lensModel, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.LensSpecification, lens.lensSpecification, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.DigitalZoomRatio, decimalToRational(digitalZoom, 1000000), false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.PixelXDimension || 40962, width, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.PixelYDimension || 40963, height, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ColorSpace, 1, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ExposureProgram, 2, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.ExposureMode, 0, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.WhiteBalance, 0, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.MeteringMode, 5, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.Flash, 16, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.SceneCaptureType, 0, false);
+        setExifTagSafe(exifDict, "Exif", exifIfd.SensingMethod, 2, false);
+
+        if (exifDict.GPS && Object.keys(exifDict.GPS).length > 0) {
+          setExifTagSafe(exifDict, "GPS", gpsIfd.GPSDateStamp, gpsUtc.dateStamp, false);
+          setExifTagSafe(exifDict, "GPS", gpsIfd.GPSTimeStamp, gpsUtc.timeStamp, false);
+          setExifTagSafe(exifDict, "GPS", gpsIfd.GPSSpeedRef, "K", false);
+          setExifTagSafe(exifDict, "GPS", gpsIfd.GPSSpeed, decimalToRational(randomBetween(0, 0.35), 1000), false);
         }
+
+        return {
+          imageFilename,
+          nowExif,
+          iso,
+          exposureTime,
+          exposureBias,
+          brightness,
+          fNumber: lens.fNumber,
+          focalLength: lens.focalLength,
+          focal35: lens.focal35,
+          lensModel: lens.lensModel,
+          digitalZoom,
+          width,
+          height,
+          subsec
+        };
+      }
+
+      function chooseLensProfile(referenceExif) {
+        const refLens = String(referenceExif?.Exif?.[window.piexif.ExifIFD.LensModel] || "").toLowerCase();
+        const profiles = [
+          {
+            key: "ultra-wide",
+            weight: refLens.includes("2.22") ? 82 : 18,
+            focalLength: 2.22,
+            focal35: 13,
+            fNumber: 2.2,
+            lensModel: "iPhone 14 Pro Max back triple camera 2.22mm f/2.2",
+            lensSpecification: [[222, 100], [9, 1], [178, 100], [28, 10]]
+          },
+          {
+            key: "main",
+            weight: refLens.includes("6.86") ? 82 : 56,
+            focalLength: 6.86,
+            focal35: 24,
+            fNumber: 1.78,
+            lensModel: "iPhone 14 Pro Max back triple camera 6.86mm f/1.78",
+            lensSpecification: [[222, 100], [9, 1], [178, 100], [28, 10]]
+          },
+          {
+            key: "tele",
+            weight: refLens.includes("9mm") ? 82 : 12,
+            focalLength: 9,
+            focal35: 77,
+            fNumber: 2.8,
+            lensModel: "iPhone 14 Pro Max back triple camera 9mm f/2.8",
+            lensSpecification: [[222, 100], [9, 1], [178, 100], [28, 10]]
+          }
+        ];
+
+        const total = profiles.reduce((sum, profile) => sum + profile.weight, 0);
+        let pick = Math.random() * total;
+        for (const profile of profiles) {
+          pick -= profile.weight;
+          if (pick <= 0) return profile;
+        }
+        return profiles[1];
+      }
+
+      function chooseDigitalZoom(lens, refExif) {
+        const refZoom = rationalToNumber(refExif?.[window.piexif.ExifIFD.DigitalZoomRatio]);
+        const base = Number.isFinite(refZoom) && refZoom > 0 ? refZoom : 1;
+        if (lens.key === "ultra-wide") return roundTo(clamp(base + randomBetween(-0.18, 0.25), 1, 2.2), 3);
+        if (lens.key === "tele") return roundTo(randomBetween(1, 1.35), 3);
+        return roundTo(clamp(base + randomBetween(-0.2, 0.3), 1, 2.4), 3);
       }
 
       function randomIsoNear(baseIso) {
-        const ladder = [50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000];
-        let nearestIdx = 0;
+        const ladder = [32, 40, 50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200];
+        let nearestIndex = 0;
         let nearestDiff = Infinity;
-        ladder.forEach((iso, idx) => {
+        ladder.forEach((iso, index) => {
           const diff = Math.abs(iso - baseIso);
           if (diff < nearestDiff) {
             nearestDiff = diff;
-            nearestIdx = idx;
+            nearestIndex = index;
           }
         });
-        const jitter = Math.floor(randomBetween(-2, 3));
-        const nextIdx = clamp(nearestIdx + jitter, 0, ladder.length - 1);
-        return ladder[nextIdx];
+        const nextIndex = clamp(nearestIndex + Math.floor(randomBetween(-2, 3)), 0, ladder.length - 1);
+        return ladder[nextIndex];
       }
 
-      function toNumber(value) {
-        const n = Number(value);
-        return Number.isFinite(n) ? n : null;
+      async function extractOutputMeta(blob, applied) {
+        try {
+          const dataUrl = await fileToDataURL(blob);
+          const exif = window.piexif.load(dataUrl);
+          const zeroth = exif["0th"] || {};
+          const exifIfd = exif.Exif || {};
+          const gps = exif.GPS || {};
+          const coords = extractGpsCoordinates(gps);
+          const dateTime = zeroth[window.piexif.ImageIFD.DateTime] || "";
+          const dateTimeOriginal = exifIfd[window.piexif.ExifIFD.DateTimeOriginal] || "";
+          const make = zeroth[window.piexif.ImageIFD.Make] || "";
+          const model = zeroth[window.piexif.ImageIFD.Model] || "";
+          const lensModel = exifIfd[window.piexif.ExifIFD.LensModel] || "";
+          const iso = exifIfd[window.piexif.ExifIFD.ISOSpeedRatings] || "";
+          const exposure = rationalToNumber(exifIfd[window.piexif.ExifIFD.ExposureTime]);
+          const fNumber = rationalToNumber(exifIfd[window.piexif.ExifIFD.FNumber]);
+          const focal = rationalToNumber(exifIfd[window.piexif.ExifIFD.FocalLength]);
+          return {
+            dateTime,
+            dateTimeOriginal,
+            makeModel: `${make} ${model}`.trim(),
+            lensModel,
+            gpsPresent: Object.keys(gps).length > 0,
+            latitude: coords ? coords.latitude : null,
+            longitude: coords ? coords.longitude : null,
+            changed: [
+              { label: "Date/heure", value: dateTimeOriginal || dateTime || "-" },
+              { label: "ISO", value: String(iso || "-") },
+              { label: "Exposition", value: exposure ? formatExposure(exposure) : "-" },
+              { label: "Ouverture", value: fNumber ? `f/${roundTo(fNumber, 2)}` : "-" },
+              { label: "Focale", value: focal ? `${roundTo(focal, 2)} mm (${applied.focal35} mm eq.)` : "-" },
+              { label: "Objectif", value: lensModel || "-" },
+              { label: "Zoom digital", value: `${applied.digitalZoom}x` },
+              { label: "Dimensions EXIF", value: `${applied.width} x ${applied.height}` }
+            ]
+          };
+        } catch (_) {
+          return null;
+        }
       }
 
-      function rationalToNumber(value) {
-        if (!Array.isArray(value) || value.length !== 2) return null;
-        const n = Number(value[0]);
-        const d = Number(value[1]);
-        if (!Number.isFinite(n) || !Number.isFinite(d) || d === 0) return null;
-        return n / d;
+      function sanitizeExifDict(raw) {
+        const output = {
+          "0th": {},
+          Exif: {},
+          GPS: {},
+          Interop: {},
+          "1st": {},
+          thumbnail: null
+        };
+        ["0th", "Exif", "GPS", "Interop"].forEach((ifd) => {
+          const source = raw && raw[ifd] ? raw[ifd] : {};
+          Object.keys(source).forEach((key) => {
+            const tag = Number(key);
+            if (!isExifTagSupported(ifd, tag)) return;
+            const value = source[key];
+            if (value === undefined || value === null) return;
+            output[ifd][tag] = value;
+          });
+        });
+        stripEmbeddedThumbnail(output);
+        return output;
       }
 
-      function signedRationalToNumber(value) {
-        return rationalToNumber(value);
+      function ensureExifShape(exifDict) {
+        if (!exifDict["0th"]) exifDict["0th"] = {};
+        if (!exifDict.Exif) exifDict.Exif = {};
+        if (!exifDict.GPS) exifDict.GPS = {};
+        if (!exifDict.Interop) exifDict.Interop = {};
+        if (!exifDict["1st"]) exifDict["1st"] = {};
+        if (!("thumbnail" in exifDict)) exifDict.thumbnail = null;
       }
 
-      function toUnsignedRational(value, precision) {
-        const d = Math.max(1, Math.round(precision || 1000));
-        const n = Math.max(0, Math.round(value * d));
-        return [n, d];
+      function stripEmbeddedThumbnail(exifDict) {
+        exifDict["1st"] = {};
+        exifDict.thumbnail = null;
+        if (exifDict["0th"]) {
+          delete exifDict["0th"][513];
+          delete exifDict["0th"][514];
+        }
       }
 
-      function toSignedRational(value, precision) {
-        const d = Math.max(1, Math.round(precision || 1000));
-        const n = Math.round(value * d);
-        return [n, d];
-      }
-
-      function randomBetween(min, max) {
-        return min + (Math.random() * (max - min));
-      }
-
-      function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-      }
-
-      function deepCloneExif(dict) {
-        return JSON.parse(JSON.stringify(dict || {}));
+      function cloneExifDict(exifDict) {
+        return JSON.parse(JSON.stringify(exifDict || {}));
       }
 
       function setExifTagSafe(exifDict, ifdName, tagId, value, onlyIfMissing) {
@@ -1582,18 +1771,64 @@
         return Object.prototype.hasOwnProperty.call(ifdTags, String(tagId));
       }
 
-      function buildIphoneLikeFilename(usedSet) {
-        const start = Date.now() % 10000;
-        for (let i = 0; i < 10000; i += 1) {
-          const candidate = `IMG_${String((start + i) % 10000).padStart(4, "0")}.JPG`;
-          if (!usedSet.has(candidate)) {
-            usedSet.add(candidate);
-            return candidate;
-          }
-        }
-        const fallback = `IMG_${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}.JPG`;
-        usedSet.add(fallback);
-        return fallback;
+      function buildReferenceInfo(exifDict, sourceName) {
+        const zeroth = exifDict["0th"] || {};
+        const exif = exifDict.Exif || {};
+        const gps = exifDict.GPS || {};
+        const make = zeroth[window.piexif.ImageIFD.Make] || "";
+        const model = zeroth[window.piexif.ImageIFD.Model] || "";
+        const lens = exif[window.piexif.ExifIFD.LensModel] || "";
+        const iso = exif[window.piexif.ExifIFD.ISOSpeedRatings] || "";
+        const exposure = rationalToNumber(exif[window.piexif.ExifIFD.ExposureTime]);
+        const fNumber = rationalToNumber(exif[window.piexif.ExifIFD.FNumber]);
+        const coords = extractGpsCoordinates(gps);
+        return {
+          sourceName,
+          device: `${make} ${model}`.trim() || "Apple iPhone",
+          lens: String(lens || "-"),
+          gps: coords && Number.isFinite(coords.latitude) && Number.isFinite(coords.longitude)
+            ? `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`
+            : "absent",
+          iso: String(iso || "-"),
+          exposure: exposure ? formatExposure(exposure) : "-",
+          fNumber: fNumber ? `f/${roundTo(fNumber, 2)}` : "-",
+          software: zeroth[window.piexif.ImageIFD.Software] || "-"
+        };
+      }
+
+      function hasUsefulReferenceExif(exifDict) {
+        const zeroth = exifDict?.["0th"] || {};
+        const exif = exifDict?.Exif || {};
+        const gps = exifDict?.GPS || {};
+        const hasDevice = Boolean(zeroth[window.piexif.ImageIFD.Make] || zeroth[window.piexif.ImageIFD.Model]);
+        const hasCapture = Boolean(exif[window.piexif.ExifIFD.ISOSpeedRatings] || exif[window.piexif.ExifIFD.ExposureTime] || exif[window.piexif.ExifIFD.LensModel]);
+        const hasGps = Object.keys(gps).length > 0;
+        return hasDevice || hasCapture || hasGps;
+      }
+
+      function extractGpsCoordinates(gpsDict) {
+        if (!gpsDict || Object.keys(gpsDict).length === 0) return null;
+        const gpsIfd = window.piexif.GPSIFD;
+        const latDms = gpsDict[gpsIfd.GPSLatitude];
+        const latRef = gpsDict[gpsIfd.GPSLatitudeRef];
+        const lonDms = gpsDict[gpsIfd.GPSLongitude];
+        const lonRef = gpsDict[gpsIfd.GPSLongitudeRef];
+        return {
+          latitude: dmsToDecimal(latDms, latRef),
+          longitude: dmsToDecimal(lonDms, lonRef)
+        };
+      }
+
+      function dmsToDecimal(dms, ref) {
+        if (!Array.isArray(dms) || dms.length < 3) return null;
+        const deg = rationalToNumber(dms[0]);
+        const min = rationalToNumber(dms[1]);
+        const sec = rationalToNumber(dms[2]);
+        if (![deg, min, sec].every(Number.isFinite)) return null;
+        let value = deg + (min / 60) + (sec / 3600);
+        const hemisphere = String(ref || "").toUpperCase();
+        if (hemisphere === "S" || hemisphere === "W") value *= -1;
+        return value;
       }
 
       function getExifDateTime(date) {
@@ -1615,54 +1850,97 @@
         return `${sign}${hours}:${minutes}`;
       }
 
-      async function extractExifPreviewMeta(blob) {
-        try {
-          const dataUrl = await fileToDataURL(blob);
-          const exif = window.piexif.load(dataUrl);
-          const dateTime = exif?.["0th"]?.[window.piexif.ImageIFD.DateTime] || "";
-          const dateTimeOriginal = exif?.["Exif"]?.[window.piexif.ExifIFD.DateTimeOriginal] || "";
-          const gps = exif?.["GPS"] || null;
-          const coords = gps ? extractGpsCoordinates(gps) : null;
-          return {
-            dateTime,
-            dateTimeOriginal,
-            gpsPresent: Boolean(gps && Object.keys(gps).length),
-            latitude: coords ? coords.latitude : null,
-            longitude: coords ? coords.longitude : null
-          };
-        } catch (_) {
-          return {
-            dateTime: "",
-            dateTimeOriginal: "",
-            gpsPresent: false,
-            latitude: null,
-            longitude: null
-          };
-        }
-      }
-
-      function extractGpsCoordinates(gpsDict) {
-        if (!gpsDict) return null;
-        const latDms = gpsDict[window.piexif.GPSIFD.GPSLatitude];
-        const latRef = gpsDict[window.piexif.GPSIFD.GPSLatitudeRef];
-        const lonDms = gpsDict[window.piexif.GPSIFD.GPSLongitude];
-        const lonRef = gpsDict[window.piexif.GPSIFD.GPSLongitudeRef];
+      function getGpsUtcParts(date) {
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const d = String(date.getUTCDate()).padStart(2, "0");
         return {
-          latitude: dmsToDecimal(latDms, latRef),
-          longitude: dmsToDecimal(lonDms, lonRef)
+          dateStamp: `${y}:${m}:${d}`,
+          timeStamp: [
+            [date.getUTCHours(), 1],
+            [date.getUTCMinutes(), 1],
+            [date.getUTCSeconds(), 1]
+          ]
         };
       }
 
-      function dmsToDecimal(dms, ref) {
-        if (!Array.isArray(dms) || dms.length < 3) return null;
-        const deg = rationalToNumber(dms[0]);
-        const min = rationalToNumber(dms[1]);
-        const sec = rationalToNumber(dms[2]);
-        if (![deg, min, sec].every(Number.isFinite)) return null;
-        let value = deg + (min / 60) + (sec / 3600);
-        const hemisphere = String(ref || "").toUpperCase();
-        if (hemisphere === "S" || hemisphere === "W") value *= -1;
-        return value;
+      function buildIphoneLikeFilename(index, sourceName, usedNames) {
+        let number = extractIphoneSequenceFromName(sourceName);
+        for (let i = 0; i < 10000; i += 1) {
+          const current = String((number + index + i) % 10000).padStart(4, "0");
+          const candidate = `IMG_E${current}.JPG`;
+          if (!usedNames.has(candidate)) {
+            usedNames.add(candidate);
+            return candidate;
+          }
+        }
+        return `IMG_E${String(index + 1).padStart(4, "0")}.JPG`;
+      }
+
+      function extractIphoneSequenceFromName(name) {
+        const upper = String(name || "").toUpperCase();
+        const direct = upper.match(/IMG_[A-Z]?(\d{4})(?=\.[A-Z0-9]+$)/);
+        if (direct) return Number(direct[1]);
+        const trailing = upper.match(/(\d{4})(?!.*\d)/);
+        if (trailing) return Number(trailing[1]);
+        return Date.now() % 10000;
+      }
+
+      function formatExposure(value) {
+        if (!Number.isFinite(value) || value <= 0) return "-";
+        if (value >= 1) return `${roundTo(value, 2)} s`;
+        const denominator = Math.round(1 / value);
+        return `1/${denominator} s`;
+      }
+
+      function rationalToNumber(rational) {
+        if (Array.isArray(rational) && rational.length === 2) {
+          const numerator = Number(rational[0]);
+          const denominator = Number(rational[1]);
+          if (Number.isFinite(numerator) && Number.isFinite(denominator) && denominator !== 0) {
+            return numerator / denominator;
+          }
+        }
+        const direct = Number(rational);
+        return Number.isFinite(direct) ? direct : null;
+      }
+
+      function toRationalNumber(value) {
+        return rationalToNumber(value);
+      }
+
+      function decimalToRational(value, precision) {
+        const denominator = Math.max(1, Math.round(precision || 1000));
+        const numerator = Math.max(0, Math.round(value * denominator));
+        return [numerator, denominator];
+      }
+
+      function signedDecimalToRational(value, precision) {
+        const denominator = Math.max(1, Math.round(precision || 1000));
+        const numerator = Math.round(value * denominator);
+        return [numerator, denominator];
+      }
+
+      function toNumber(value) {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      }
+
+      function roundTo(value, decimals) {
+        const factor = Math.pow(10, decimals);
+        return Math.round(value * factor) / factor;
+      }
+
+      function randomBetween(min, max) {
+        return min + (Math.random() * (max - min));
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function isValidAiCount(count) {
+        return Number.isInteger(count) && count >= MIN_AI_COUNT && count <= MAX_AI_COUNT;
       }
 
       function isJpegFile(file) {
@@ -1677,20 +1955,42 @@
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
+          reader.onerror = () => reject(new Error("Lecture fichier impossible."));
           reader.readAsDataURL(file);
         });
       }
 
-      async function fileToJpegDataUrl(fileOrBlob) {
-        const image = await loadImageFromBlob(fileOrBlob);
+      async function makePreviewDataUrl(blob, maxSide) {
+        const image = await loadImageFromBlob(blob);
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+        const ratio = Math.min(1, maxSide / Math.max(width, height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(width * ratio));
+        canvas.height = Math.max(1, Math.round(height * ratio));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Canvas indisponible.");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.84);
+      }
+
+      async function blobToJpegDataUrlWithSize(blob) {
+        const image = await loadImageFromBlob(blob);
         const canvas = document.createElement("canvas");
         canvas.width = image.naturalWidth || image.width;
         canvas.height = image.naturalHeight || image.height;
         const ctx = canvas.getContext("2d");
         if (!ctx) throw new Error("Canvas indisponible.");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.drawImage(image, 0, 0);
-        return canvas.toDataURL("image/jpeg", 0.95);
+        return {
+          dataUrl: canvas.toDataURL("image/jpeg", 0.95),
+          width: canvas.width,
+          height: canvas.height
+        };
       }
 
       function dataURLToBlob(dataUrl) {
@@ -1705,17 +2005,6 @@
           arr[i] = binary.charCodeAt(i);
         }
         return new Blob([arr], { type: mime });
-      }
-
-      function downloadBlob(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename || "image.jpg";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
       function loadImageFromURL(url) {
@@ -1733,6 +2022,17 @@
           URL.revokeObjectURL(url);
           return img;
         });
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename || "image.jpg";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
       init();
