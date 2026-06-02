@@ -71,7 +71,6 @@
     }
 
     input[type="file"],
-    input[type="time"],
     select {
       width: 100%;
       min-height: 46px;
@@ -459,13 +458,13 @@
     .pack-grid {
       display: grid;
       gap: var(--space-3);
-      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       margin-top: var(--space-3);
     }
 
     .pack-item {
-      border: 1px solid #2b3340;
-      background: #111722;
+      border: 1px solid #315065;
+      background: #142130;
       border-radius: var(--radius-sm);
       padding: 10px;
       display: grid;
@@ -478,7 +477,7 @@
       aspect-ratio: 1 / 1;
       object-fit: cover;
       border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+      border: 1px solid #466072;
       background: #101214;
     }
 
@@ -489,10 +488,17 @@
       font-size: 0.9rem;
     }
 
+    .pack-item select {
+      background: #f1f7f6;
+      color: #071817;
+      border-color: #6aa49f;
+      font-weight: 800;
+    }
+
     .pack-ranges {
       display: grid;
       gap: var(--space-3);
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: 1fr;
       margin-top: var(--space-3);
     }
 
@@ -505,10 +511,27 @@
       gap: 8px;
     }
 
-    .time-grid {
+    .hour-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
       gap: 8px;
+    }
+
+    .hour-btn {
+      border: 1px solid #3c5666;
+      background: #0f1720;
+      color: #f0f6f5;
+      border-radius: var(--radius-sm);
+      min-height: 42px;
+      padding: 8px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .hour-btn.active {
+      background: var(--accent);
+      color: #061413;
+      border-color: var(--accent);
     }
 
     .thumb-card,
@@ -895,6 +918,9 @@
         <div class="pack-grid" id="packGrid"></div>
         <div class="pack-ranges" id="packRanges"></div>
       </div>
+      <div class="actions">
+        <button class="btn primary" id="validateOptionsBtn" type="button"><i data-lucide="check"></i>Valider</button>
+      </div>
     </div>
   </div>
 
@@ -963,6 +989,7 @@
         packOptionsBody: document.getElementById("packOptionsBody"),
         packGrid: document.getElementById("packGrid"),
         packRanges: document.getElementById("packRanges"),
+        validateOptionsBtn: document.getElementById("validateOptionsBtn"),
         workStatus: document.getElementById("workStatus"),
         workBanner: document.getElementById("workBanner"),
         progressBar: document.getElementById("progressBar"),
@@ -1007,6 +1034,7 @@
         els.runAllBtn.addEventListener("click", runAll);
         els.openOptionsBtn.addEventListener("click", openOptionsPanel);
         els.closeOptionsBtn.addEventListener("click", closeOptionsPanel);
+        els.validateOptionsBtn.addEventListener("click", validateOptionsPanel);
         els.optionsPanel.addEventListener("click", (event) => {
           if (event.target === els.optionsPanel) closeOptionsPanel();
         });
@@ -1334,10 +1362,21 @@
         els.optionsPanel.hidden = true;
       }
 
+      function validateOptionsPanel() {
+        syncPackOptions();
+        closeOptionsPanel();
+        showBanner(
+          els.workBanner,
+          state.packModeEnabled ? "Options validées: packs horaires actifs." : "Options validées: packs horaires désactivés.",
+          "success"
+        );
+      }
+
       function syncPackOptions() {
+        const maxPack = Math.max(1, state.aiFiles.length);
         state.packAssignments = state.aiFiles.map((_, index) => {
           const current = Number(state.packAssignments[index]);
-          return Number.isInteger(current) && current >= 1 ? current : 1;
+          return Number.isInteger(current) && current >= 1 && current <= maxPack ? current : 1;
         });
         ensurePackRange(1);
         getUsedPackIds().forEach(ensurePackRange);
@@ -1399,32 +1438,30 @@
           box.className = "pack-range";
           box.innerHTML = `
             <h3>Pack ${packId}</h3>
-            <div class="time-grid">
-              <label>
-                Début
-                <input type="time" value="${range.start}" data-range-start="${packId}">
-              </label>
-              <label>
-                Fin
-                <input type="time" value="${range.end}" data-range-end="${packId}">
-              </label>
+            <div class="hour-grid">
+              ${renderHourButtons(packId, range.hour)}
             </div>
           `;
           els.packRanges.appendChild(box);
         });
 
-        els.packRanges.querySelectorAll("[data-range-start]").forEach((input) => {
-          input.addEventListener("change", () => {
-            const packId = Number(input.getAttribute("data-range-start"));
-            ensurePackRange(packId).start = input.value || defaultTimeRangeForPack(packId).start;
+        els.packRanges.querySelectorAll("[data-hour-pack]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const packId = Number(button.getAttribute("data-hour-pack"));
+            const hour = Number(button.getAttribute("data-hour-value"));
+            ensurePackRange(packId).hour = hour;
+            renderPackOptions();
           });
         });
-        els.packRanges.querySelectorAll("[data-range-end]").forEach((input) => {
-          input.addEventListener("change", () => {
-            const packId = Number(input.getAttribute("data-range-end"));
-            ensurePackRange(packId).end = input.value || defaultTimeRangeForPack(packId).end;
-          });
-        });
+      }
+
+      function renderHourButtons(packId, selectedHour) {
+        const preferred = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+        return preferred.map((hour) => {
+          const active = Number(selectedHour) === hour ? "active" : "";
+          const next = (hour + 1) % 24;
+          return `<button class="hour-btn ${active}" type="button" data-hour-pack="${packId}" data-hour-value="${hour}">${hour}h-${next}h</button>`;
+        }).join("");
       }
 
       function getUsedPackIds() {
@@ -1442,16 +1479,11 @@
       }
 
       function defaultTimeRangeForPack(packId) {
-        const start = new Date(Date.now() + ((packId - 1) * 30 * 60 * 1000));
-        const end = new Date(start.getTime() + (20 * 60 * 1000));
+        const baseHour = new Date().getHours();
+        const hour = (baseHour + packId - 1) % 24;
         return {
-          start: formatTimeInput(start),
-          end: formatTimeInput(end)
+          hour
         };
-      }
-
-      function formatTimeInput(date) {
-        return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
       }
 
       function createTimeContextForRun() {
@@ -1468,8 +1500,8 @@
         const packs = {};
         Object.keys(packCounts).forEach((packId) => {
           const range = ensurePackRange(Number(packId));
-          const start = timeInputToDate(range.start, now);
-          let end = timeInputToDate(range.end, now);
+          const start = hourRangeToDate(range.hour, now);
+          let end = new Date(start.getTime() + (60 * 60 * 1000));
           if (end <= start) {
             end = new Date(end.getTime() + (24 * 60 * 60 * 1000));
           }
@@ -1478,7 +1510,8 @@
           const baseMs = start.getTime() + (Math.random() * Math.max(1, latestBase - start.getTime()));
           packs[packId] = {
             baseMs,
-            nextIndex: 0
+            nextIndex: 0,
+            hour: range.hour
           };
         });
 
@@ -1494,19 +1527,16 @@
         if (!pack) {
           return new Date(Date.now() + (index * 1700));
         }
-        const offset = (pack.nextIndex * randomBetween(1800, 4200)) + randomBetween(0, 900);
+        const offset = (pack.nextIndex * 3200) + randomBetween(0, 900);
         pack.nextIndex += 1;
-        return new Date(pack.baseMs + offset);
+        const date = new Date(pack.baseMs + offset);
+        date.__packLabel = `Pack ${packId} (${pack.hour}h-${(Number(pack.hour) + 1) % 24}h)`;
+        return date;
       }
 
-      function timeInputToDate(value, baseDate) {
-        const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+      function hourRangeToDate(hour, baseDate) {
         const date = new Date(baseDate);
-        if (!match) {
-          date.setSeconds(0, 0);
-          return date;
-        }
-        date.setHours(Number(match[1]), Number(match[2]), Math.floor(randomBetween(0, 50)), 0);
+        date.setHours(Number(hour) || 0, 0, Math.floor(randomBetween(0, 50)), 0);
         return date;
       }
 
@@ -1955,6 +1985,7 @@
         const refZero = referenceExif?.["0th"] || {};
 
         const nowExif = getExifDateTime(date);
+        const packLabel = date.__packLabel || "";
         const subsec = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
         const offset = getExifUtcOffset(date);
         const gpsUtc = getGpsUtcParts(date);
@@ -2026,6 +2057,7 @@
         return {
           imageFilename,
           nowExif,
+          packLabel,
           iso,
           exposureTime,
           exposureBias,
@@ -2134,6 +2166,7 @@
             latitude: coords ? coords.latitude : null,
             longitude: coords ? coords.longitude : null,
             changed: [
+              { label: "Pack horaire", value: applied.packLabel || "Mode standard" },
               { label: "Date/heure", value: dateTimeOriginal || dateTime || "-" },
               { label: "ISO", value: String(iso || "-") },
               { label: "Exposition", value: exposure ? formatExposure(exposure) : "-" },
