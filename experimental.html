@@ -1567,7 +1567,11 @@
           const used = new Set();
           for (const output of state.outputs) {
             const name = ensureUniqueZipFilename(output.filename || "IMG_0001.JPG", used);
+            const fileDate = output.captureDate ? new Date(output.captureDate) : new Date();
             zip.file(name, output.blob, {
+              date: getZipDisplayDate(output.captureDate)
+            });
+            zip.file(`__MACOSX/._${name}`, createAppleDoubleDateFile(name, fileDate), {
               date: getZipDisplayDate(output.captureDate)
             });
           }
@@ -1599,6 +1603,52 @@
         const date = dateLike ? new Date(dateLike) : new Date();
         if (Number.isNaN(date.getTime())) return new Date();
         return new Date(date.getTime() - (date.getTimezoneOffset() * 60 * 1000));
+      }
+
+      function createAppleDoubleDateFile(filename, date) {
+        const nameBytes = new TextEncoder().encode(filename || "image.jpg");
+        const finderInfoLength = 32;
+        const dateInfoLength = 16;
+        const entryCount = 3;
+        const headerLength = 26 + (entryCount * 12);
+        const realNameOffset = headerLength;
+        const dateOffset = realNameOffset + nameBytes.length;
+        const finderOffset = dateOffset + dateInfoLength;
+        const totalLength = finderOffset + finderInfoLength;
+        const buffer = new ArrayBuffer(totalLength);
+        const view = new DataView(buffer);
+        let pos = 0;
+
+        view.setUint32(pos, 0x00051607); pos += 4;
+        view.setUint32(pos, 0x00020000); pos += 4;
+        pos += 16;
+        view.setUint16(pos, entryCount); pos += 2;
+
+        writeAppleDoubleEntry(view, pos, 3, realNameOffset, nameBytes.length); pos += 12;
+        writeAppleDoubleEntry(view, pos, 8, dateOffset, dateInfoLength); pos += 12;
+        writeAppleDoubleEntry(view, pos, 9, finderOffset, finderInfoLength);
+
+        new Uint8Array(buffer, realNameOffset, nameBytes.length).set(nameBytes);
+
+        const seconds = appleDoubleSeconds(date);
+        view.setInt32(dateOffset, seconds);
+        view.setInt32(dateOffset + 4, seconds);
+        view.setInt32(dateOffset + 8, 0x80000000);
+        view.setInt32(dateOffset + 12, seconds);
+
+        return new Blob([buffer], { type: "application/octet-stream" });
+      }
+
+      function writeAppleDoubleEntry(view, offset, id, entryOffset, length) {
+        view.setUint32(offset, id);
+        view.setUint32(offset + 4, entryOffset);
+        view.setUint32(offset + 8, length);
+      }
+
+      function appleDoubleSeconds(date) {
+        const validDate = date && !Number.isNaN(date.getTime()) ? date : new Date();
+        const appleDoubleEpoch = Date.UTC(2000, 0, 1, 0, 0, 0);
+        return Math.round((validDate.getTime() - appleDoubleEpoch) / 1000);
       }
 
       function ensureUniqueZipFilename(filename, usedNames) {
