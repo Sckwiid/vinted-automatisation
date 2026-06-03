@@ -1568,7 +1568,7 @@
           for (const output of state.outputs) {
             const name = ensureUniqueZipFilename(output.filename || "IMG_0001.JPG", used);
             zip.file(name, output.blob, {
-              date: output.captureDate ? new Date(output.captureDate) : new Date()
+              date: getZipDisplayDate(output.captureDate)
             });
           }
           const zipBlob = await zip.generateAsync({ type: "blob", compression: "STORE" });
@@ -1593,6 +1593,12 @@
           }
         }
         return `${Date.now()}${extension}`;
+      }
+
+      function getZipDisplayDate(dateLike) {
+        const date = dateLike ? new Date(dateLike) : new Date();
+        if (Number.isNaN(date.getTime())) return new Date();
+        return new Date(date.getTime() - (date.getTimezoneOffset() * 60 * 1000));
       }
 
       function ensureUniqueZipFilename(filename, usedNames) {
