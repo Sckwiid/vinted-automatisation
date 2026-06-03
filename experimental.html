@@ -1307,7 +1307,8 @@
             state.outputs[i] = {
               blob: injected.blob,
               url,
-              filename: imageName
+              filename: imageName,
+              captureDate: captureDate.toISOString()
             };
             state.outputMeta[i] = await extractOutputMeta(injected.blob, injected.applied);
             updateStage(i, "exif", "done");
@@ -1566,7 +1567,9 @@
           const used = new Set();
           for (const output of state.outputs) {
             const name = ensureUniqueZipFilename(output.filename || "IMG_0001.JPG", used);
-            zip.file(name, output.blob);
+            zip.file(name, output.blob, {
+              date: output.captureDate ? new Date(output.captureDate) : new Date()
+            });
           }
           const zipBlob = await zip.generateAsync({ type: "blob", compression: "STORE" });
           downloadBlob(zipBlob, makeRandomNumericName(new Set(), ".zip"));
