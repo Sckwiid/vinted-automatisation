@@ -1491,7 +1491,10 @@
       }
 
       function createTimeContextForRun() {
-        if (!state.packModeEnabled) return null;
+        const standardDate = createStandardCaptureDate();
+        if (!state.packModeEnabled) {
+          return { standardDate };
+        }
         syncPackOptions();
 
         const now = new Date();
@@ -1519,23 +1522,37 @@
           };
         });
 
-        return { packs };
+        return { packs, standardDate };
       }
 
       function getCaptureDateForImage(index, timeContext) {
-        if (!timeContext) {
-          return new Date(Date.now() + (index * 1700));
+        if (!timeContext || !timeContext.packs) {
+          return cloneCaptureDate(timeContext?.standardDate || createStandardCaptureDate(), "Mode standard");
         }
         const packId = String(state.packAssignments[index] || 1);
         const pack = timeContext.packs[packId];
         if (!pack) {
-          return new Date(Date.now() + (index * 1700));
+          return cloneCaptureDate(timeContext.standardDate || createStandardCaptureDate(), "Mode standard");
         }
         const offset = (pack.nextIndex * 3200) + randomBetween(0, 900);
         pack.nextIndex += 1;
         const date = new Date(pack.baseMs + offset);
         date.__packLabel = `Pack ${packId} (${pack.hour}h-${(Number(pack.hour) + 1) % 24}h)`;
         return date;
+      }
+
+      function createStandardCaptureDate() {
+        const date = new Date(Date.now() - 5000);
+        date.setMilliseconds(0);
+        date.__packLabel = "Mode standard";
+        return date;
+      }
+
+      function cloneCaptureDate(date, label) {
+        const source = date && !Number.isNaN(date.getTime()) ? date : createStandardCaptureDate();
+        const clone = new Date(source.getTime());
+        clone.__packLabel = label || source.__packLabel || "";
+        return clone;
       }
 
       function hourRangeToDate(hour, baseDate) {
